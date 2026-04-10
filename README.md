@@ -85,7 +85,7 @@ For Cursor / Windsurf / Claude Desktop, add to your MCP config ([paths here](doc
     "memtomem": {
       "command": "uvx",
       "args": ["--from", "memtomem", "memtomem-server"],
-      "env": { "MEMTOMEM_INDEXING__MEMORY_DIRS": "~/notes" }
+      "env": { "MEMTOMEM_INDEXING__MEMORY_DIRS": "[\"~/notes\"]" }
     }
   }
 }
