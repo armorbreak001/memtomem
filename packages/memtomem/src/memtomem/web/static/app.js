@@ -5783,6 +5783,8 @@ async function loadHarnessSessions() {
   }
 }
 
+let _sessionEventsCache = [];
+
 async function showSessionEvents(sessionId) {
   const panel = qs('session-events-panel');
   const list = qs('session-events-list');
@@ -5791,20 +5793,56 @@ async function showSessionEvents(sessionId) {
   list.innerHTML = '<div class="spinner-panel"></div>';
   try {
     const data = await api('GET', `/api/sessions/${sessionId}/events`);
+    _sessionEventsCache = data.events;
     if (!data.events.length) {
       list.innerHTML = '<div class="empty-state">No events</div>';
       return;
     }
-    list.innerHTML = data.events.map(e =>
-      `<div class="harness-event">
-        <span class="badge badge-${e.event_type}">${e.event_type}</span>
-        <span class="harness-event-content">${truncate(e.content, 120)}</span>
-        <span class="muted-sm">${relativeTime(e.created_at)}</span>
-      </div>`
-    ).join('');
+    const types = [...new Set(data.events.map(e => e.event_type))];
+    const filterHtml = types.length > 1
+      ? `<div class="harness-event-filter">
+          <button class="active" data-filter="all">all (${data.events.length})</button>
+          ${types.map(t => `<button data-filter="${t}">${t} (${data.events.filter(e => e.event_type === t).length})</button>`).join('')}
+        </div>`
+      : '';
+    list.innerHTML = filterHtml + _renderSessionEvents(data.events);
+    list.querySelectorAll('.harness-event-filter button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        list.querySelectorAll('.harness-event-filter button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const f = btn.dataset.filter;
+        const filtered = f === 'all' ? _sessionEventsCache : _sessionEventsCache.filter(e => e.event_type === f);
+        const eventsContainer = list.querySelector('.harness-events-body');
+        if (eventsContainer) eventsContainer.innerHTML = _renderSessionEventRows(filtered);
+      });
+    });
   } catch (e) {
     list.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
   }
+}
+
+function _renderSessionEvents(events) {
+  return `<div class="harness-events-body">${_renderSessionEventRows(events)}</div>`;
+}
+
+function _renderSessionEventRows(events) {
+  return events.map(e => {
+    const hasMeta = e.metadata && Object.keys(e.metadata).length > 0;
+    const metaHtml = hasMeta
+      ? `<div class="harness-event-meta" hidden>${JSON.stringify(e.metadata, null, 2)}</div>`
+      : '';
+    const metaBtn = hasMeta
+      ? `<button class="btn-ghost btn-xs" onclick="this.nextElementSibling.hidden=!this.nextElementSibling.hidden" title="Toggle metadata">{ }</button>`
+      : '';
+    return `<div class="harness-event">
+      <span class="badge badge-${e.event_type}">${e.event_type}</span>
+      <span class="harness-event-content">
+        ${truncate(e.content, 120)}
+        ${metaBtn}${metaHtml}
+      </span>
+      <span class="muted-sm">${relativeTime(e.created_at)}</span>
+    </div>`;
+  }).join('');
 }
 
 qs('session-events-close')?.addEventListener('click', () => hide(qs('session-events-panel')));

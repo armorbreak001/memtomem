@@ -2221,7 +2221,30 @@ body.help-hidden #help-toggle { opacity: 0.5; }
 .badge-edit { background: #8b5cf622; color: #7c3aed; }
 .badge-delete { background: #ef444422; color: #dc2626; }
 .badge-tool_call { background: #6366f122; color: #4f46e5; }
+.badge-subagent_start { background: #10b98122; color: #059669; }
+.badge-subagent_stop { background: #6b728022; color: #4b5563; }
+.badge-decision { background: #f59e0b22; color: #d97706; }
+.badge-error { background: #ef444422; color: #dc2626; }
 .badge-promoted { background: #22c55e22; color: #16a34a; }
+
+.harness-event-meta {
+  margin: 4px 0 2px 0; padding: 6px 8px; border-radius: 4px;
+  background: var(--bg-secondary, #f3f4f6); font-size: 0.75rem;
+  font-family: monospace; white-space: pre-wrap; word-break: break-all;
+  color: var(--muted);
+}
+
+.harness-event-filter {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.harness-event-filter button {
+  font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+  border: 1px solid var(--border); background: transparent;
+  cursor: pointer; color: var(--text);
+}
+.harness-event-filter button.active {
+  background: var(--accent, #3b82f6); color: #fff; border-color: transparent;
+}
 
 .scratch-add-row {
   display: flex; gap: 8px; align-items: center; margin-bottom: 12px;

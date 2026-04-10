@@ -26,6 +26,7 @@ class SessionEventOut(BaseModel):
     content: str
     chunk_ids: list[str]
     created_at: str
+    metadata: dict = {}
 
 
 class SessionsListResponse(BaseModel):
