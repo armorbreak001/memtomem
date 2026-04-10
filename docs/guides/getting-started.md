@@ -106,7 +106,7 @@ Verify it works:
 ```bash
 uv run mm -h               # CLI help
 uv run memtomem-server     # MCP server starts (Ctrl+C to stop)
-uv run pytest              # 1101 tests pass
+uv run pytest              # 896 tests pass
 ```
 
 ---
