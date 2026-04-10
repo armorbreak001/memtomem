@@ -106,7 +106,7 @@ Verify it works:
 ```bash
 uv run mm -h               # CLI help
 uv run memtomem-server     # MCP server starts (Ctrl+C to stop)
-uv run pytest              # 896 tests pass
+uv run pytest              # 897 tests pass
 ```
 
 ---
@@ -283,6 +283,11 @@ mm config set key value    # change a setting
 mm embedding-reset         # check/resolve embedding model mismatch
 mm context detect          # find agent config files
 mm context generate        # sync project rules to all editors
+mm session start           # start a tracked session
+mm session end             # end session with auto-summary
+mm session list            # list sessions
+mm activity log            # log agent activity event
+mm session wrap -- CMD     # wrap a command with session lifecycle
 mm shell                   # interactive REPL
 mm web                     # launch Web UI (http://localhost:8080)
 ```

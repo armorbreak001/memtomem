@@ -87,6 +87,12 @@ When enabled, search results include surrounding chunks from the same source fil
 | `MEMTOMEM_NAMESPACE__DEFAULT_NAMESPACE` | `default` | Default namespace for new chunks |
 | `MEMTOMEM_NAMESPACE__ENABLE_AUTO_NS` | `false` | Auto-derive namespace from folder name |
 
+## Timezone
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MEMTOMEM_TIMEZONE` | `UTC` | Display timezone for timestamps (e.g. `Asia/Seoul`). Storage remains UTC |
+
 ## Tool Mode
 
 | Variable | Default | Description |
