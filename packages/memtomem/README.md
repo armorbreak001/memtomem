@@ -9,17 +9,42 @@ Markdown-first long-term memory infrastructure for AI agents. Hybrid keyword + s
 - Developers who want a searchable knowledge base built from their existing markdown notes — no proprietary database, no vendor lock-in
 - Multilingual content (English, Korean, Japanese, Chinese) via `bge-m3` embeddings
 
-## Installation
+## Quick Start
 
 ```bash
-# As an MCP server (most common — no install needed, uvx handles it)
-ollama pull nomic-embed-text         # one-time embedding model
+# 1. Prerequisites — Python 3.12+ and Ollama (ollama.com)
+ollama pull nomic-embed-text    # ~270MB, one-time
 
-# Add to Claude Code
-claude mcp add memtomem -s user -- uvx --from memtomem memtomem-server
+# 2. Install memtomem
+uv tool install memtomem        # or: pipx install memtomem
 
-# Or add to .mcp.json for Cursor / Windsurf / Claude Desktop
+# 3. Run the 7-step setup wizard (picks embedding, memory folder, editor)
+mm init
 ```
+
+Then in your AI editor, ask:
+
+```
+"Call the mem_status tool"   →  confirms the server is connected
+"Index my notes folder"      →  mem_index(path="~/notes")
+"Search for deployment"      →  mem_search(query="deployment checklist")
+"Remember this insight"      →  mem_add(content="...", tags="ops")
+```
+
+That's it. Your agent now has a long-term memory built from plain markdown files.
+
+For full setup, OpenAI configuration, and troubleshooting, see the [Getting Started guide](https://github.com/memtomem/memtomem/blob/main/docs/guides/getting-started.md).
+
+<details>
+<summary><b>Prefer no install? (uvx direct, MCP only)</b></summary>
+
+If you'd rather skip the CLI install, `uvx` will download and run memtomem on demand. You'll need to set `MEMORY_DIRS` yourself — without it `mem_index` has nothing to index.
+
+```bash
+claude mcp add memtomem -s user -- uvx --from memtomem memtomem-server
+```
+
+Or add to `.mcp.json` for Cursor / Windsurf / Claude Desktop:
 
 ```json
 {
@@ -35,24 +60,7 @@ claude mcp add memtomem -s user -- uvx --from memtomem memtomem-server
 }
 ```
 
-For terminal use, install the CLI separately:
-
-```bash
-uv tool install memtomem    # or: pipx install memtomem
-mm init                     # 7-step interactive wizard
-```
-
-## Quick Start
-
-In your AI editor, ask:
-
-```
-"Index my notes folder"   →  mem_index(path="~/notes")
-"Search for deployment"   →  mem_search(query="deployment checklist")
-"Remember this insight"   →  mem_add(content="...", tags="ops")
-```
-
-That's it. Your agent now has a long-term memory built from plain markdown files.
+</details>
 
 ## Key Features
 

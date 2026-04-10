@@ -30,7 +30,7 @@ flowchart LR
 
 ## Quick Start (5 minutes)
 
-### 1. Prerequisites
+### 1. Install prerequisites
 
 - **Python 3.12+** ([python.org](https://python.org))
 - **Ollama** ([ollama.com](https://ollama.com)) — runs the embedding model locally, for free
@@ -39,17 +39,45 @@ flowchart LR
 ollama pull nomic-embed-text    # ~270MB, one-time
 ```
 
-> **No GPU or prefer cloud?** Skip Ollama and use OpenAI embeddings — the setup wizard (`mm init`) will guide you. See [Embeddings](docs/guides/embeddings.md).
+> **No GPU or prefer cloud?** Pick OpenAI in the wizard — see [Embeddings](docs/guides/embeddings.md).
 
-### 2. Connect to your AI editor
+### 2. Install memtomem
 
-**Claude Code** (recommended):
+```bash
+uv tool install memtomem        # or: pipx install memtomem
+```
+
+### 3. Run the setup wizard
+
+```bash
+mm init
+```
+
+The 7-step wizard picks your embedding model, **creates or points at the folder you want indexed**, configures storage and namespace, and registers memtomem with Claude Code (or generates a `.mcp.json` for Cursor / Windsurf / Claude Desktop). Type `b` to go back, `q` to quit.
+
+### 4. Verify and use
+
+In your AI editor, ask:
+
+```
+"Call the mem_status tool"   →  confirms the server is connected
+"Index my notes folder"      →  mem_index(path="~/notes")
+"Search for deployment"      →  mem_search(query="deployment checklist")
+"Remember this insight"      →  mem_add(content="...", tags="ops")
+```
+
+That's it. Your agent now has long-term memory.
+
+<details>
+<summary><b>Prefer no install? (uvx direct)</b></summary>
+
+If you'd rather not install the CLI, `uvx` will download and run memtomem on demand. You'll set up MEMORY_DIRS yourself.
 
 ```bash
 claude mcp add memtomem -s user -- uvx --from memtomem memtomem-server
 ```
 
-**Cursor / Windsurf / Claude Desktop** — add to your MCP config file ([paths here](docs/guides/mcp-clients.md)):
+For Cursor / Windsurf / Claude Desktop, add to your MCP config ([paths here](docs/guides/mcp-clients.md)):
 
 ```json
 {
@@ -63,19 +91,9 @@ claude mcp add memtomem -s user -- uvx --from memtomem memtomem-server
 }
 ```
 
-### 3. Index and search
+> **Heads up**: without `MEMORY_DIRS` set to a folder you actually use, `mem_index` has nothing to index. The wizard avoids this trap by asking for the folder up front.
 
-In your AI editor, ask:
-
-```
-"Index my notes folder"  →  mem_index(path="~/notes")
-"Search for deployment"  →  mem_search(query="deployment checklist")
-"Remember this insight"  →  mem_add(content="...", tags="ops")
-```
-
-That's it. Your agent now has long-term memory.
-
-For terminal use, install the CLI separately and run `mm init` for an interactive 7-step setup wizard. See the [Getting Started guide](docs/guides/getting-started.md) for details.
+</details>
 
 ---
 
