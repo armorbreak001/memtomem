@@ -257,6 +257,12 @@ def create_tables(
         "CREATE INDEX IF NOT EXISTS idx_session_events_session ON session_events(session_id)"
     )
 
+    # Idempotent migration: metadata column for session_events
+    try:
+        db.execute("ALTER TABLE session_events ADD COLUMN metadata TEXT DEFAULT '{}'")
+    except sqlite3.OperationalError:
+        pass  # column already exists
+
     # --- Working memory ---
     db.execute("""
         CREATE TABLE IF NOT EXISTS working_memory (

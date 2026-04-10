@@ -75,7 +75,7 @@ class SqliteBackend(
         db_path = Path(self._config.sqlite_path).expanduser()
         db_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
 
-        self._db = sqlite3.connect(str(db_path))
+        self._db = sqlite3.connect(str(db_path), timeout=10)
         # Restrict DB file to owner-only access
         try:
             db_path.chmod(0o600)
