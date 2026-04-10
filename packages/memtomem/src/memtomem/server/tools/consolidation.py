@@ -108,11 +108,16 @@ async def mem_consolidate(
         lines.append(f"  → Use mem_consolidate_apply(group_id={g['group_id']}, summary='...')")
         lines.append("")
 
-    # Store group info for apply step (with timestamp for staleness check)
-    import time
+    # Persist groups to scratch storage (survives restart, auto-expires in 1 hour)
+    import json
+    from datetime import datetime, timedelta, timezone
 
-    app._consolidation_groups = groups  # type: ignore[attr-defined]
-    app._consolidation_ts = time.time()  # type: ignore[attr-defined]
+    expires = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(timespec="seconds")
+    await app.storage.scratch_set(
+        "consolidation_groups",
+        json.dumps(groups, default=str),
+        expires_at=expires,
+    )
 
     return "\n".join(lines)
 
@@ -136,17 +141,23 @@ async def mem_consolidate_apply(
         summary: The consolidated summary written by the agent
         keep_originals: Keep original chunks (default True). If False, marks them for decay.
     """
+    import json
+    from datetime import datetime, timezone
+
     app = _get_app(ctx)
 
-    import time
-
-    groups = getattr(app, "_consolidation_groups", None)
-    if not groups:
+    entry = await app.storage.scratch_get("consolidation_groups")
+    if not entry:
         return "Error: run mem_consolidate first to identify groups."
 
-    ts = getattr(app, "_consolidation_ts", 0)
-    if time.time() - ts > 3600:
-        return "Error: consolidation groups are stale (>1 hour). Run mem_consolidate again."
+    # Check expiration (scratch_get does not filter expired entries)
+    if entry.get("expires_at"):
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        if entry["expires_at"] < now:
+            await app.storage.scratch_delete("consolidation_groups")
+            return "Error: consolidation groups are stale (>1 hour). Run mem_consolidate again."
+
+    groups = json.loads(entry["value"])
 
     group = next((g for g in groups if g["group_id"] == group_id), None)
     if group is None:
@@ -180,6 +191,9 @@ async def mem_consolidate_apply(
                 logger.debug("Skipping invalid UUID in consolidation: %s", cid)
             except Exception:
                 logger.warning("Failed to link chunk %s in consolidation", cid, exc_info=True)
+
+    # Clean up scratch entry after successful apply
+    await app.storage.scratch_delete("consolidation_groups")
 
     return (
         f"Consolidation applied for group {group_id}.\n"

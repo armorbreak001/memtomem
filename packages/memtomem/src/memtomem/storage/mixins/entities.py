@@ -99,6 +99,20 @@ class EntityMixin:
             for r in rows
         ]
 
+    async def get_extracted_chunk_ids(self, chunk_ids: list[str]) -> set[str]:
+        """Return the subset of chunk_ids that already have extracted entities."""
+        if not chunk_ids:
+            return set()
+        from memtomem.storage.sqlite_helpers import placeholders
+
+        db = self._get_read_db()
+        ph = placeholders(len(chunk_ids))
+        rows = db.execute(
+            f"SELECT DISTINCT chunk_id FROM chunk_entities WHERE chunk_id IN ({ph})",
+            chunk_ids,
+        ).fetchall()
+        return {r[0] for r in rows}
+
     async def get_entity_type_counts(self) -> dict[str, int]:
         """Return count of entities per type."""
         db = self._get_read_db()

@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import json
+import logging
 import struct
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+_log = logging.getLogger(__name__)
 
 
 class HistoryMixin:
     """Mixin providing search history methods. Requires self._get_db()."""
+
+    _history_save_count: int = 0
+    _HISTORY_PRUNE_INTERVAL: int = 100
+    _HISTORY_MAX_AGE_DAYS: int = 90
 
     async def save_query_history(
         self,
@@ -27,6 +34,24 @@ class HistoryMixin:
             (query_text, emb_blob, json.dumps(result_chunk_ids), json.dumps(result_scores), now),
         )
         db.commit()
+
+        # Periodic pruning of old entries
+        self._history_save_count += 1
+        if self._history_save_count % self._HISTORY_PRUNE_INTERVAL == 0:
+            self._prune_old_history()
+
+    def _prune_old_history(self) -> None:
+        """Delete query history rows older than _HISTORY_MAX_AGE_DAYS."""
+        cutoff = (
+            datetime.now(timezone.utc) - timedelta(days=self._HISTORY_MAX_AGE_DAYS)
+        ).isoformat(timespec="seconds")
+        db = self._get_db()
+        deleted = db.execute(
+            "DELETE FROM query_history WHERE created_at < ?", (cutoff,)
+        ).rowcount
+        if deleted:
+            db.commit()
+            _log.info("Pruned %d old query_history rows (>%d days)", deleted, self._HISTORY_MAX_AGE_DAYS)
 
     async def get_query_history(self, limit: int = 20, since: str | None = None) -> list[dict]:
         db = self._get_db()

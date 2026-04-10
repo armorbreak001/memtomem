@@ -85,6 +85,12 @@ class HealthWatchdog:
                 # Trend comparison needs store
                 if self._store:
                     await self._run_check(lambda app: check_trend_comparison(app, self._store))
+                # Periodic session cleanup (idempotent, safe)
+                if self._maintenance:
+                    try:
+                        await self._maintenance.cleanup_old_sessions()
+                    except Exception:
+                        logger.error("Session cleanup failed", exc_info=True)
                 last_deep = now
 
             await asyncio.sleep(min(self._config.heartbeat_interval_seconds, 10.0))

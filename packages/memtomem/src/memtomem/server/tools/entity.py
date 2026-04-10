@@ -62,11 +62,16 @@ async def mem_entity_scan(
 
         scanned_sources += 1
 
+        # Pre-fetch already-extracted chunk IDs (single query instead of N)
+        already_extracted: set[str] = set()
+        if not overwrite:
+            already_extracted = await storage.get_extracted_chunk_ids(
+                [str(c.id) for c in chunks]
+            )
+
         for chunk in chunks:
-            if not overwrite:
-                existing = await storage.get_entities_for_chunk(str(chunk.id))
-                if existing:
-                    continue
+            if not overwrite and str(chunk.id) in already_extracted:
+                continue
 
             entities = extract_entities(chunk.content, entity_types)
             if not entities:

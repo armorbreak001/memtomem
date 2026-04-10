@@ -83,3 +83,10 @@ class MaintenanceExecutor:
             log_pages,
         )
         return {"busy": busy, "log_pages": log_pages, "checkpointed": checkpointed}
+
+    async def cleanup_old_sessions(self, max_age_days: int = 90) -> dict:
+        """Delete ended sessions older than max_age_days."""
+        deleted = await self._app.storage.cleanup_old_sessions(max_age_days)
+        if deleted:
+            logger.info("Auto-maintenance: cleaned %d old sessions (>%d days)", deleted, max_age_days)
+        return {"deleted_sessions": deleted}

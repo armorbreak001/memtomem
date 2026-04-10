@@ -91,6 +91,7 @@ class SqliteBackend(
             raise
 
         self._db.execute("PRAGMA journal_mode=WAL")
+        self._db.execute("PRAGMA wal_autocheckpoint=1000")
         self._db.execute("PRAGMA synchronous=NORMAL")
         self._db.execute("PRAGMA foreign_keys=ON")
 

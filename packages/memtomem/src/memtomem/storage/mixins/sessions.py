@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 class SessionMixin:
@@ -105,3 +105,21 @@ class SessionMixin:
             }
             for r in rows
         ]
+
+    async def cleanup_old_sessions(self, max_age_days: int = 90) -> int:
+        """Delete ended sessions older than max_age_days.
+
+        Session events are cleaned up via ON DELETE CASCADE.
+        Only deletes sessions where ended_at is not NULL (completed sessions).
+        """
+        cutoff = (
+            datetime.now(timezone.utc) - timedelta(days=max_age_days)
+        ).isoformat(timespec="seconds")
+        db = self._get_db()
+        cursor = db.execute(
+            "DELETE FROM sessions WHERE ended_at IS NOT NULL AND ended_at < ?",
+            (cutoff,),
+        )
+        if cursor.rowcount:
+            db.commit()
+        return cursor.rowcount
