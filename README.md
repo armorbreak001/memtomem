@@ -68,6 +68,8 @@ uv run mm init  # project install
 
 The 7-step wizard picks your embedding model, **creates or points at the folder you want indexed**, configures storage and namespace, and registers memtomem with Claude Code (or generates a `.mcp.json` for Cursor / Windsurf / Claude Desktop). Type `b` to go back, `q` to quit.
 
+> **CI / automation?** Skip the wizard: `mm init -y` (uses sensible defaults). See `mm init --help` for all options.
+
 ### 4. Verify and use
 
 In your AI editor, ask:

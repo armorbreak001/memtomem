@@ -364,8 +364,43 @@ def _write_mcp_json(server_cmd: str, server_args: list[str], mcp_env: dict[str, 
 # ── CLI entry point ───────────────────────────────────────────────────
 
 
+_MODEL_DIMS: dict[str, int] = {
+    "nomic-embed-text": 768,
+    "bge-m3": 1024,
+    "text-embedding-3-small": 1536,
+    "text-embedding-3-large": 3072,
+}
+
+
 @click.command("init")
-def init() -> None:
+@click.option(
+    "-y", "--non-interactive", is_flag=True, help="Skip wizard, use defaults or provided options"
+)
+@click.option("--provider", type=click.Choice(["ollama", "openai"]), default=None)
+@click.option("--model", default=None, help="Embedding model name")
+@click.option("--memory-dir", default=None, help="Memory directory path")
+@click.option("--db-path", default=None, help="SQLite DB path")
+@click.option("--namespace", default=None, help="Default namespace")
+@click.option("--auto-ns", is_flag=True, default=False, help="Auto-assign namespace from folder")
+@click.option("--top-k", default=None, type=int, help="Results per search")
+@click.option("--tokenizer", type=click.Choice(["unicode61", "kiwipiepy"]), default=None)
+@click.option("--decay", is_flag=True, default=False, help="Enable time-decay")
+@click.option("--api-key", default=None, help="OpenAI API key")
+@click.option("--mcp", "mcp_mode", type=click.Choice(["claude", "json", "skip"]), default=None)
+def init(
+    non_interactive: bool,
+    provider: str | None,
+    model: str | None,
+    memory_dir: str | None,
+    db_path: str | None,
+    namespace: str | None,
+    auto_ns: bool,
+    top_k: int | None,
+    tokenizer: str | None,
+    decay: bool,
+    api_key: str | None,
+    mcp_mode: str | None,
+) -> None:
     """Set up memtomem with an interactive wizard."""
     click.echo()
     click.secho("  memtomem init", fg="cyan", bold=True)
@@ -390,14 +425,44 @@ def init() -> None:
         click.echo(f"  Project directory: {state['project_dir']}")
         click.echo()
 
-    steps = [
-        _step_embedding,
-        _step_memory_dir,
-        _step_storage,
-        _step_namespace,
-        _step_search,
-        _step_language,
-        _step_mcp,
-    ]
-    run_steps(steps, state)
+    if non_interactive:
+        _provider = provider or "ollama"
+        _model = model or (
+            "nomic-embed-text" if _provider == "ollama" else "text-embedding-3-small"
+        )
+        _memory_dir = memory_dir or "~/memories"
+
+        # Auto-create memory directory
+        memory_path = Path(_memory_dir).expanduser()
+        if not memory_path.exists():
+            memory_path.mkdir(parents=True, exist_ok=True)
+
+        state.update(
+            {
+                "provider": _provider,
+                "model": _model,
+                "dimension": _MODEL_DIMS.get(_model, 768),
+                "api_key": api_key or "",
+                "memory_dir": _memory_dir,
+                "db_path": db_path or str(Path("~/.memtomem").expanduser() / "memtomem.db"),
+                "enable_auto_ns": auto_ns,
+                "default_ns": namespace or "default",
+                "top_k": top_k or 10,
+                "tokenizer": tokenizer or "unicode61",
+                "decay_enabled": decay,
+                "mcp_choice": {"claude": 1, "json": 2, "skip": 3}.get(mcp_mode or "skip", 3),
+            }
+        )
+    else:
+        steps = [
+            _step_embedding,
+            _step_memory_dir,
+            _step_storage,
+            _step_namespace,
+            _step_search,
+            _step_language,
+            _step_mcp,
+        ]
+        run_steps(steps, state)
+
     _write_config_and_summary(state)

@@ -122,6 +122,16 @@ uv run mm init  # Project or source install
 
 The wizard walks you through 7 steps. Type `b` to go back, `q` to quit at any step.
 
+#### Non-interactive mode (CI / automation)
+
+Skip the wizard entirely with `-y`. All settings have sensible defaults:
+
+```bash
+mm init -y                                              # all defaults (Ollama + nomic-embed-text)
+mm init -y --provider openai --api-key sk-...           # OpenAI
+mm init -y --memory-dir ~/notes --mcp claude            # custom dir + Claude Code auto-setup
+```
+
 1. **Embedding provider** — Ollama (local, free) or OpenAI (cloud). Model selection and auto-pull.
 2. **Memory directory** — where your notes live (e.g., `~/notes`, `~/memories`)
 3. **Storage** — SQLite database path (default: `~/.memtomem/memtomem.db`)
