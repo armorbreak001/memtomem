@@ -6,16 +6,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 ### Added
-- `examples/notebooks/` — five scenario-based Jupyter notebooks that walk
+- `examples/notebooks/` — six scenario-based Jupyter notebooks that walk
   through the Python API (`create_components()`, `search_pipeline.search()`,
   `index_engine.index_path()`, storage mixins, and `MemtomemStore` for
   LangGraph). Covers hello-memory, bulk indexing + filters, session /
-  scratch / recall, search tuning, and a two-node LangGraph agent. Each
-  notebook runs against a throwaway temp directory so it cannot touch the
-  user's real `~/.memtomem/` setup.
+  scratch / recall, search tuning, a two-node LangGraph agent, and the
+  full memory lifecycle (hash-diff incremental re-index on edit,
+  single-chunk delete via `storage.delete_chunks`, orphan cleanup via
+  `delete_by_source`, and `force=True` full re-embed). Each notebook
+  runs against a throwaway temp directory so it cannot touch the user's
+  real `~/.memtomem/` setup.
 - Notebook 02 includes a "Korean with the kiwipiepy tokenizer" section
   that prints the token stream produced by `unicode61` vs. `kiwipiepy`
   side by side and runs the same query under each configuration.
+- `examples/notebooks/README.md` now has a "How memories are stored"
+  section that explains the file-backed (`index_file` path used by
+  notebooks 01/02/04/05/06) vs DB-only (`create_session`, `scratch_set`,
+  … used by notebook 03) storage paths and the shared temp directory
+  layout every notebook relies on.
 
 ### Fixed
 - `MemtomemStore.index()` (LangGraph adapter) and the `mm` shell `index`
