@@ -24,12 +24,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   notebooks 01/02/04/05/06) vs DB-only (`create_session`, `scratch_set`,
   … used by notebook 03) storage paths and the shared temp directory
   layout every notebook relies on.
+- `docs/guides/hands-on-tutorial.md` gained steps 3.6 / 3.7 covering the
+  file lifecycle from the MCP side: reading `mem_index` `Indexed` /
+  `Skipped (unchanged)` / `Deleted (stale)` stats after a file edit,
+  `mem_index force=true` full re-embed for model swaps, and
+  `mem_do action="orphans"` (dry-run → apply) to clean up chunks whose
+  source file was deleted. Step 1.2 now also documents the
+  `MEMTOMEM_TOOL_MODE` env var and which tutorial steps use the `mem_do`
+  routing vs top-level calls.
 
 ### Fixed
 - `MemtomemStore.index()` (LangGraph adapter) and the `mm` shell `index`
   command called a nonexistent `IndexEngine.index_directory()` method and
   would crash at runtime. Routed both to `index_path()` and added
   regression tests in `tests/test_langgraph.py`.
+- `docs/guides/hands-on-tutorial.md` steps 3.2 / 3.3 / 3.4 used to call
+  `mem_batch_add` / `mem_edit` / `mem_delete` as top-level tools, but
+  those are non-core actions — readers following the tutorial with the
+  default MCP config (`MEMTOMEM_TOOL_MODE=core`) would hit "tool not
+  found" errors. All three call sites now go through
+  `mem_do(action="...", params={...})`, matching the default tool set.
 
 ## [0.1.3] — 2026-04-10
 

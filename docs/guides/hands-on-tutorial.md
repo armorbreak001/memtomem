@@ -52,6 +52,14 @@ claude mcp add memtomem -s user -- uvx --from memtomem memtomem-server
 
 > **Note**: MCP clients run `memtomem-server` via `uvx`. `memtomem` (the CLI) is for terminal commands only.
 
+> **Tool mode**: By default the server exposes 9 core tools plus
+> `mem_do`, which routes to every other tool via
+> `mem_do(action="...", params={...})`. This tutorial uses the default
+> `core` mode and shows the `mem_do` form for non-core actions like
+> `edit` / `delete` / `batch_add` / `orphans`. If you prefer calling
+> them as top-level tools, add `"env": {"MEMTOMEM_TOOL_MODE": "standard"}`
+> (≈30 tools) or `"full"` (all 73) to the MCP server entry above.
+
 ### 1.3 First Tool Call
 
 Call `mem_status` from your MCP client to check the system status.
@@ -199,13 +207,24 @@ Tags: python, typing
 
 ### 3.2 Adding Multiple Notes at Once
 
+`batch_add` is a non-core action, so in the default tool mode you call
+it through `mem_do`:
+
 ```
-> mem_batch_add entries=[{"key": "FastAPI", "value": "FastAPI is a framework that adds Pydantic validation on top of Starlette", "tags": ["python", "web"]}, {"key": "uvicorn", "value": "uvicorn is an ASGI server. Use the --reload option for auto-restart during development", "tags": ["python", "web"]}]
+> mem_do action="batch_add" params={"entries": [
+    {"key": "FastAPI", "value": "FastAPI is a framework that adds Pydantic validation on top of Starlette", "tags": ["python", "web"]},
+    {"key": "uvicorn", "value": "uvicorn is an ASGI server. Use the --reload option for auto-restart during development", "tags": ["python", "web"]}
+  ]}
 ```
+
+Each entry takes `key` (title), `value` (content), and optional `tags`.
+All entries in one call are appended to the same markdown file and
+indexed in a single pass.
 
 ### 3.3 Editing an Existing Chunk
 
-Use the chunk ID from search results to edit the content.
+Use the chunk ID from search results to edit the content. Like
+`batch_add`, `edit` is a non-core action and is called through `mem_do`:
 
 ```
 > mem_search query="docker compose"
@@ -214,14 +233,26 @@ Use the chunk ID from search results to edit the content.
 After finding the chunk ID (e.g., `abc123`) in the results:
 
 ```
-> mem_edit chunk_id="abc123" new_content="docker compose up -d: Run a multi-container app in the background. Since v2, use docker compose (with a space) instead of docker-compose (with a hyphen)."
+> mem_do action="edit" params={"chunk_id": "abc123", "new_content": "docker compose up -d: Run a multi-container app in the background. Since v2, use docker compose (with a space) instead of docker-compose (with a hyphen)."}
 ```
+
+Under the hood `edit` rewrites the corresponding line range in the
+source markdown file and then re-indexes that file with `force=true`,
+so the change is immediately searchable and rolls back cleanly if
+indexing fails.
 
 ### 3.4 Deleting Unnecessary Chunks
 
 ```
-> mem_delete chunk_id="abc123"
+> mem_do action="delete" params={"chunk_id": "abc123"}
 ```
+
+`delete` can also remove every chunk from a given source file or
+namespace — pass `{"source_file": "~/my-notes/old.md"}` or
+`{"namespace": "scratch"}` instead of `chunk_id`. When called with a
+`chunk_id` it strips the matching line range from the markdown file and
+re-indexes (same rollback semantics as `edit`); the source-file and
+namespace variants only touch the index, not the files on disk.
 
 ### 3.5 Checking Status
 
@@ -233,6 +264,94 @@ Example response:
 ```
 Chunks: 12 | Sources: 4 | Storage: sqlite
 ```
+
+### 3.6 Editing Files Directly and Re-Indexing
+
+When you edit a markdown file outside memtomem (in your editor, from
+a git pull, whatever), re-run `mem_index` on the same path to let
+memtomem catch up:
+
+```
+> mem_index path="~/my-notes"
+```
+
+Example response after editing one section in `git-workflow.md`:
+```
+Indexing complete:
+- Files scanned: 3
+- Total chunks: 10
+- Indexed: 2
+- Skipped (unchanged): 8
+- Deleted (stale): 1
+- Duration: 85ms
+```
+
+How to read the stats:
+
+- **Indexed** — chunks whose content hash is new (either brand-new
+  sections *or* sections whose text changed and now have a different
+  hash). Only these hit the embedder.
+- **Skipped (unchanged)** — hash matched a chunk already in the
+  database, no embedding call made.
+- **Deleted (stale)** — a chunk that used to exist in the file but is
+  no longer produced. An edited section contributes *both* an Indexed
+  row (new hash) and a Deleted row (old hash), because the diff is
+  hash-based.
+
+If you swap the embedding model (e.g., `nomic-embed-text` → `bge-m3`)
+and need every chunk re-embedded from scratch, pass `force=true`:
+
+```
+> mem_index path="~/my-notes" force=true
+```
+
+Every chunk will show up in `Indexed` regardless of hash match.
+
+### 3.7 Cleaning Up After Deleted Files
+
+If you delete a markdown file from disk, `mem_index` will *not* notice
+the deletion — it only walks files that currently exist, so the old
+chunks stay in the database as "orphans". `mem_status` detects this
+automatically and tells you to clean up:
+
+```
+> mem_status
+```
+
+```
+memtomem v0.1.x
+...
+Source files:  4 (1 orphaned — run mem_cleanup_orphans)
+```
+
+Call `orphans` through `mem_do` (dry-run first, then apply):
+
+```
+> mem_do action="orphans" params={"dry_run": true}
+```
+
+Example response:
+```
+Orphaned files: 1 (dry-run, no deletions)
+- ~/my-notes/docker-notes.md
+```
+
+Once you're happy with the list, run it for real:
+
+```
+> mem_do action="orphans" params={"dry_run": false}
+```
+
+```
+Cleanup complete:
+- Orphaned files: 1
+- Chunks deleted: 3
+```
+
+> This is the MCP-client twin of what
+> [`examples/notebooks/06_lifecycle.ipynb`](../../examples/notebooks/06_lifecycle.ipynb)
+> walks through from the Python API side (with the raw
+> `storage.delete_chunks` / `delete_by_source` calls visible).
 
 ---
 
@@ -253,17 +372,27 @@ If you install the CLI (`uv tool install memtomem`, or `uv run mm ...` from a gi
 
 ## MCP Tools Used in This Tutorial
 
+Core tools (always available in `core` mode, the default):
+
 | Tool | Purpose |
 |------|---------|
-| `mem_status` | Check system status |
-| `mem_index` | Index markdown files |
+| `mem_status` | Check system status (also warns when orphan files exist) |
+| `mem_index` | Index markdown files; supports `force=true` for full rebuild |
 | `mem_search` | Hybrid search (BM25 + Dense) |
 | `mem_recall` | Date/source-based memory retrieval |
 | `mem_add` | Quick note addition |
-| `mem_batch_add` | Add multiple notes at once |
-| `mem_edit` | Edit chunk content |
-| `mem_delete` | Delete chunks |
 | `mem_stats` | Overall status (chunk count, source count) |
+
+Non-core actions (in `core` mode call them via `mem_do`; in
+`standard` / `full` mode they are also available as top-level tools
+named `mem_<action>`):
+
+| `mem_do` action | Purpose |
+|-----------------|---------|
+| `batch_add` | Add multiple notes in one call |
+| `edit` | Edit a chunk's source-file line range and re-index |
+| `delete` | Delete chunk(s) by `chunk_id`, `source_file`, or `namespace` |
+| `orphans` | Find and remove chunks whose source file no longer exists (alias of `cleanup_orphans`) |
 
 ---
 
