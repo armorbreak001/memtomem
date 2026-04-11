@@ -225,6 +225,16 @@ class SqliteBackend(
             "configured": {"dimension": cfg_dim, "provider": cfg_prov, "model": cfg_model},
         }
 
+    def clear_embedding_mismatch(self) -> None:
+        """Clear cached embedding mismatch flags.
+
+        Call after resolving a mismatch either by resetting DB meta
+        (handled automatically by ``reset_embedding_meta``) or by switching
+        the runtime config to match stored DB values.
+        """
+        self._dim_mismatch = None
+        self._model_mismatch = None
+
     async def reset_embedding_meta(
         self,
         dimension: int,
@@ -252,6 +262,7 @@ class SqliteBackend(
             USING vec0(embedding float[{self._dimension}])
         """)
         db.commit()
+        self.clear_embedding_mismatch()
 
     async def reset_vec_dimension(self, new_dimension: int) -> None:
         """Backward-compatible wrapper around reset_embedding_meta()."""

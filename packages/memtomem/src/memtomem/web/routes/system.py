@@ -463,8 +463,6 @@ async def reset_embedding(
         provider=config.embedding.provider,
         model=config.embedding.model,
     )
-    storage._dim_mismatch = None
-    storage._model_mismatch = None
     return EmbeddingResetResponse(
         ok=True,
         message="Embedding metadata reset. All indexed vectors deleted — please re-index.",

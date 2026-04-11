@@ -270,3 +270,36 @@ class TestStorageExtended:
 
         results = await storage.dense_search([0.2] * 768, top_k=5)
         assert len(results) >= 1
+
+    async def test_clear_embedding_mismatch_zeroes_both_flags(self, components):
+        """clear_embedding_mismatch() must reset both private tuples to None."""
+        storage = components.storage
+        storage._dim_mismatch = (768, 1024)
+        storage._model_mismatch = ("ollama", "nomic-embed-text", "ollama", "bge-m3")
+        assert storage.embedding_mismatch is not None
+
+        storage.clear_embedding_mismatch()
+
+        assert storage._dim_mismatch is None
+        assert storage._model_mismatch is None
+        assert storage.embedding_mismatch is None
+
+    async def test_reset_embedding_meta_clears_mismatch_flags(self, components):
+        """reset_embedding_meta() must clear any pending mismatch flags."""
+        storage = components.storage
+        storage._dim_mismatch = (768, 1024)
+        storage._model_mismatch = (
+            "ollama",
+            "nomic-embed-text",
+            "openai",
+            "text-embedding-3-small",
+        )
+        assert storage.embedding_mismatch is not None
+
+        await storage.reset_embedding_meta(
+            dimension=768, provider="openai", model="text-embedding-3-small"
+        )
+
+        assert storage.embedding_mismatch is None
+        assert storage._dim_mismatch is None
+        assert storage._model_mismatch is None

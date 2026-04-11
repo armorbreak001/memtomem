@@ -157,10 +157,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             if stored_info.get("provider"):
                 cfg.provider = stored_info["provider"]
             # Clear mismatch flags since config now matches DB
-            if hasattr(comp.storage, "_dim_mismatch"):
-                comp.storage._dim_mismatch = None
-            if hasattr(comp.storage, "_model_mismatch"):
-                comp.storage._model_mismatch = None
+            comp.storage.clear_embedding_mismatch()
 
     # Ensure memory_dirs exist
     for d in comp.config.indexing.memory_dirs:

@@ -189,8 +189,7 @@ def _revert_to_stored(app: AppContext) -> str:
         namespace_config=config.namespace,
     )
 
-    storage._dim_mismatch = None
-    storage._model_mismatch = None
+    storage.clear_embedding_mismatch()
 
     return (
         f"Reverted to stored DB settings: "
@@ -247,8 +246,6 @@ async def mem_embedding_reset(
             provider=config.embedding.provider,
             model=config.embedding.model,
         )
-        app.storage._dim_mismatch = None
-        app.storage._model_mismatch = None
         return (
             f"DB reset to {config.embedding.provider}/{config.embedding.model} "
             f"({config.embedding.dimension}d). All vectors deleted — run mem_index to re-index."
