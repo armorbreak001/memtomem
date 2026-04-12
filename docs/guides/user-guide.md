@@ -1506,7 +1506,7 @@ memtomem can manage Claude Code hooks via a canonical
 ```bash
 # 1. Create the canonical source (or let mm init create it)
 mkdir -p .memtomem
-echo '{"hooks": []}' > .memtomem/settings.json
+echo '{"hooks": {}}' > .memtomem/settings.json
 
 # 2. Add your hooks to .memtomem/settings.json, then sync
 mm context sync --include=settings

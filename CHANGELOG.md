@@ -62,9 +62,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   - New `--include=settings` flag for `mm context {generate,sync,diff,detect}`
     (CLI and MCP `mem_context_*` tools).
   - New `mm init` wizard step (Step 8) prompts for Claude Code hooks setup.
-  - Canonical source: `.memtomem/settings.json` with a `hooks` array.
-  - Additive-only merge: hooks are appended by name; on collision the user's
-    existing hook wins and a guided warning is emitted.
+  - Canonical source: `.memtomem/settings.json` with a `hooks` record
+    (keyed by event name, e.g. `PostToolUse`).
+  - Additive-only merge: rules are matched by `(event, matcher)`; on
+    collision the user's existing rule wins and a guided warning is emitted.
   - Formatting: `json.dumps(indent=2)` normalization — byte-for-byte
     preservation of hand-edited formatting is explicitly not guaranteed.
   - Malformed `~/.claude/settings.json` is skipped with an error message
