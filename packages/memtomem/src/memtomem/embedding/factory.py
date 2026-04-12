@@ -15,6 +15,11 @@ def create_embedder(config: EmbeddingConfig) -> object:
 
         return NoopEmbedder()
 
+    if provider == "onnx":
+        from memtomem.embedding.onnx import OnnxEmbedder
+
+        return OnnxEmbedder(config)
+
     if provider == "ollama":
         from memtomem.embedding.ollama import OllamaEmbedder
 
@@ -26,5 +31,5 @@ def create_embedder(config: EmbeddingConfig) -> object:
         return OpenAIEmbedder(config)
 
     raise ConfigError(
-        f"Unknown embedding provider: {config.provider!r}. Supported: none, ollama, openai"
+        f"Unknown embedding provider: {config.provider!r}. Supported: none, onnx, ollama, openai"
     )

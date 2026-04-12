@@ -29,6 +29,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+onnx = ["fastembed>=0.4"]
 ollama = ["ollama>=0.4"]
 openai = ["openai>=1.60"]
 korean = ["kiwipiepy>=0.18"]
@@ -42,7 +43,7 @@ web = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
 ]
-all = ["memtomem[ollama,openai,korean,code,web]"]
+all = ["memtomem[onnx,ollama,openai,korean,code,web]"]
 
 [project.scripts]
 memtomem = "memtomem.cli:cli"
