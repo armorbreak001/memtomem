@@ -16,6 +16,41 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
     atomically). Configurable via `MEMTOMEM_POLICY__MAX_ACTIONS_PER_RUN`.
   - Consecutive failure counter: escalates to WARNING after 3 failures.
   - Cache invalidation only when mutations actually occur.
+- **`auto_promote` policy handler** — inverse of `auto_archive`. Moves
+  archived chunks back to an active namespace when access patterns
+  indicate continued relevance (`min_access_count`, `recency_days`,
+  `min_importance_score`). Ping-pong prevention: promotion resets
+  `last_accessed_at` to now.
+- **Gemini / Codex memory ingest**: `mm ingest gemini-memory` indexes
+  `GEMINI.md` files (namespace `gemini-memory:<slug>`);
+  `mm ingest codex-memory` indexes Codex `~/.codex/memories/` directories
+  (namespace `codex-memory:<slug>`). Shared infrastructure via
+  `_build_namespace(prefix=)` and `tag_fn` parameters.
+- **Multi-slug Claude ingest**: `mm ingest claude-memory --source
+  ~/.claude/projects/` auto-discovers all `<slug>/memory/` subdirectories
+  and ingests them in a single run with per-slug + aggregate output.
+- **MCP `mem_ingest` tool**: `mem_do(action="ingest")` exposes all three
+  ingest commands (Claude, Gemini, Codex) via MCP, including multi-slug
+  discovery for `source_type="claude"`.
+- **Web UI: Hooks Sync** — new Settings subsection for comparing and
+  resolving conflicts between memtomem's canonical hooks and Claude's
+  `~/.claude/settings.json`. Per-conflict resolution with mtime guard.
+- **Web UI: Korean i18n** — language toggle (EN/한) in the header.
+  Auto-detects browser locale; persists choice in `localStorage`. All
+  static labels translated via `data-i18n` attributes and `t()` function.
+
+### Fixed
+- **MCP tool registration audit** — 9 issues resolved: orphaned
+  `mem_ask` import, incomplete `ns_assign`/`cleanup_orphans` registration,
+  missing `ingest`/`search`/`context` categories in `mem_do` docstring,
+  shutdown isolation, missing `@tool_handler` on `mem_increment_access`,
+  and atexit ordering.
+
+### Docs
+- User guide Section 8: Memory Policies (5 types, 4 MCP tools,
+  scheduler, combining patterns).
+- Configuration reference: `auto_promote`, `auto_consolidate` config keys.
+- Web UI guide: Hooks Sync and i18n sections.
 
 ## [0.1.6] — 2026-04-12
 

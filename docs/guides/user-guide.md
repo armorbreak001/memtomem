@@ -63,7 +63,7 @@ sequenceDiagram
 
 ## MCP Tools at a Glance
 
-memtomem provides **72 MCP tools** organized into categories:
+memtomem provides **73 MCP tools** organized into categories:
 
 | Category | Tools | What they do |
 |----------|-------|-------------|
@@ -524,6 +524,63 @@ How Claude memory files are processed:
   directory. If you edit a feedback note in memtomem's web UI, Claude's
   auto-memory on disk is unchanged — and vice versa, new Claude memories
   appear only after you re-run `mm ingest claude-memory`.
+
+**Multi-slug discovery**: passing a parent directory instead of a single
+`memory/` folder auto-discovers every `<slug>/memory/` underneath:
+
+```
+mm ingest claude-memory --source ~/.claude/projects/
+```
+
+Per-slug results are printed individually, followed by an aggregate total.
+
+### Ingesting Gemini CLI memory
+
+`mm ingest gemini-memory` indexes a Gemini CLI `GEMINI.md` file. Global
+memories live at `~/.gemini/GEMINI.md`; per-project memories sit in the
+project root.
+
+```
+mm ingest gemini-memory --source ~/.gemini/GEMINI.md --dry-run
+mm ingest gemini-memory --source ~/.gemini/
+```
+
+- **Namespace**: `gemini-memory:<slug>`. `~/.gemini/GEMINI.md` becomes
+  `gemini-memory:global`; a project-root file uses the parent directory name.
+- **Tags**: every chunk gets `gemini-memory`.
+- **Source**: a single `GEMINI.md` file (or a directory containing one).
+
+### Ingesting Codex CLI memory
+
+`mm ingest codex-memory` indexes a Codex CLI memories directory. The
+default location is `~/.codex/memories/`.
+
+```
+mm ingest codex-memory --source ~/.codex/memories/ --dry-run
+mm ingest codex-memory --source ~/.codex/memories/
+```
+
+- **Namespace**: `codex-memory:<slug>`. `~/.codex/memories/` becomes
+  `codex-memory:global`; a custom directory uses its name as the slug.
+- **Tags**: every chunk gets `codex-memory`.
+- **Excluded**: `README.md` is skipped. Hidden files and non-markdown files
+  are ignored. Discovery is flat (non-recursive).
+- **Delta on re-run**: same content-hash dedup as the Claude ingest.
+
+### MCP `mem_ingest` tool
+
+All three ingest commands are also available as an MCP action:
+
+```
+mem_do(action="ingest", params={
+    "source": "~/.claude/projects/",
+    "source_type": "claude",   # or "gemini", "codex"
+    "dry_run": true
+})
+```
+
+This is useful for agent-driven ingestion without the CLI. Multi-slug
+discovery works the same way for `source_type="claude"`.
 
 ---
 
@@ -1490,4 +1547,4 @@ mem_context_detect(include="settings")
 - [Practical Use Cases](use-cases.md) — Agent workflow scenarios
 - [Claude Code Hooks](hooks.md) — Automate memory with hooks
 - [memtomem-stm](https://github.com/memtomem/memtomem-stm) — Proactive surfacing, compression, caching (separate package)
-- [Full Tool Reference](../../packages/memtomem/README.md) — All 72 tools with parameters
+- [Full Tool Reference](../../packages/memtomem/README.md) — All 73 tools with parameters

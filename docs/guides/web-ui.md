@@ -90,6 +90,30 @@ View saved procedural memories — reusable workflows and patterns.
 - Displays procedure-tagged chunks with full content
 - Created via `mem_procedure_save` MCP tool
 
+#### Hooks Sync
+
+Compare and resolve conflicts between memtomem's canonical hook
+definitions (`.memtomem/settings.json`) and Claude's
+`~/.claude/settings.json`.
+
+- **Status indicators**: In Sync, Out of Sync, or Conflicts
+- **Synced hooks**: Hooks that match in both files
+- **Pending hooks**: Hooks defined in memtomem but not yet in Claude's settings
+- **Conflicts**: Hooks with the same name but different content — each
+  conflict shows a diff with the option to accept the proposed version
+- **Apply all**: Run a full settings merge to push all pending hooks at once
+- **Per-conflict resolve**: Replace a single hook in the target file
+  with memtomem's version. An mtime guard prevents race conditions if
+  another process writes to the file concurrently
+
+API endpoints:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/settings-sync` | Compare canonical vs target hooks |
+| `POST` | `/api/settings-sync` | Run full settings merge |
+| `POST` | `/api/settings-sync/resolve` | Resolve a single hook conflict |
+
 #### Health
 
 Memory system health report with visual gauges:
@@ -121,6 +145,20 @@ The Web UI exposes a REST API at `/api/`. Interactive docs: `http://localhost:80
 | `POST` | `/api/scratch/{key}/promote` | Promote to long-term memory |
 | `GET` | `/api/procedures` | List procedure-tagged chunks |
 | `GET` | `/api/eval` | Memory health report JSON |
+
+---
+
+## Language / i18n
+
+The web UI supports English and Korean. A toggle button in the header
+switches between the two languages:
+
+- **EN** / **한**: click to switch. The choice is stored in
+  `localStorage` and persists across sessions.
+- Auto-detection: if your browser language starts with `ko`, Korean
+  is used by default on first visit.
+- All static labels use `data-i18n` attributes; the `t()` function
+  handles interpolation and falls back to English for any missing key.
 
 ---
 

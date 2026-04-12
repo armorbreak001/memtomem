@@ -4,7 +4,7 @@ Markdown-first semantic memory for AI agents. This plugin adds hybrid BM25 + den
 
 ## Features
 
-- **72 MCP tools** — search, add, edit, delete, index, recall, browse, tags, cross-ref, fetch, namespace, dedup, decay, export/import (configurable via tool mode: core/standard/full)
+- **73 MCP tools** — search, add, edit, delete, index, recall, browse, tags, cross-ref, fetch, namespace, dedup, decay, export/import (configurable via tool mode: core/standard/full)
 - **5 slash commands** — `/memtomem:search`, `/memtomem:remember`, `/memtomem:index`, `/memtomem:status`, `/memtomem:setup`
 - **Automation hooks** — auto-search on prompt submit, auto-reindex on file edits
 - **Memory curator agent** — deduplicate, tag, and clean up stale entries
@@ -54,7 +54,7 @@ The plugin uses sensible defaults. Customize via environment variables or the `m
 | Embedding model | `nomic-embed-text` | `MEMTOMEM_EMBEDDING__MODEL` |
 | Database path | `~/.memtomem/memtomem.db` | `MEMTOMEM_STORAGE__SQLITE_PATH` |
 
-**Tool mode**: Controls how many tools are exposed to the AI agent. `core` (9 tools, default) for minimal context usage -- includes `mem_do` meta-tool to access all other actions via `mem_do(action="...", params={...})`. `standard` (~32 + `mem_do`) for normal use, `full` (72) for everything. Fewer tools = less context tokens, better accuracy.
+**Tool mode**: Controls how many tools are exposed to the AI agent. `core` (9 tools, default) for minimal context usage -- includes `mem_do` meta-tool to access all other actions via `mem_do(action="...", params={...})`. `standard` (~32 + `mem_do`) for normal use, `full` (73) for everything. Fewer tools = less context tokens, better accuracy.
 
 To set env vars for the MCP server, edit `.mcp.json` in the plugin directory:
 

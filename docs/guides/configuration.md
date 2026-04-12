@@ -103,13 +103,49 @@ When enabled, search results include surrounding chunks from the same source fil
 
 When enabled, all policies created via `mem_policy_add` are executed periodically. Policies can always be run on demand via `mem_policy_run` regardless of this setting. The action count semantics vary by policy type (e.g. archived chunks vs consolidated groups).
 
+### Policy type config keys
+
+Each policy has a `config` JSON dict passed to `mem_policy_add`. The keys
+depend on `policy_type`:
+
+**`auto_archive`**
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `max_age_days` | int | _(required)_ | Chunks older than this are archived |
+| `archive_namespace` | str | `"archive"` | Destination namespace |
+| `age_field` | str | `"created_at"` | `"created_at"` or `"last_accessed_at"` |
+| `min_access_count` | int\|null | null | Only archive if `access_count ≤` this |
+| `max_importance_score` | float\|null | null | Only archive if `importance_score <` this |
+| `archive_namespace_template` | str\|null | null | Per-chunk expansion, e.g. `"archive:{first_tag}"` |
+
+**`auto_promote`** (inverse of auto_archive)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `source_prefix` | str | `"archive"` | Namespace prefix to search for candidates |
+| `target_namespace` | str | `"default"` | Destination namespace for promoted chunks |
+| `min_access_count` | int | `3` | Minimum access count to qualify |
+| `min_importance_score` | float\|null | null | Minimum importance score (AND with access count) |
+| `recency_days` | int\|null | null | Only promote if accessed within this many days |
+
+**`auto_consolidate`**
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `min_group_size` | int | `3` | Minimum chunks per source to trigger consolidation |
+| `max_groups` | int | `10` | Maximum source groups to process per run |
+| `max_bullets` | int | `20` | Maximum bullet points in heuristic summary |
+| `keep_originals` | bool | `true` | Keep original chunks after consolidation (recommended) |
+| `summary_namespace` | str | `"archive:summary"` | Namespace for generated summary chunks |
+
 ## Tool Mode
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MEMTOMEM_TOOL_MODE` | `core` | Which MCP tools are exposed: `core` (9 tools), `standard` (~32 + `mem_do`), `full` (72) |
+| `MEMTOMEM_TOOL_MODE` | `core` | Which MCP tools are exposed: `core` (9 tools), `standard` (~32 + `mem_do`), `full` (73) |
 
-In `core` mode, use `mem_do(action="...", params={...})` to access any of the 64 non-core actions. Fewer tools means less context usage for AI agents.
+In `core` mode, use `mem_do(action="...", params={...})` to access any of the 64+ non-core actions. Fewer tools means less context usage for AI agents.
 
 ## Querying and Modifying at Runtime
 
