@@ -93,6 +93,16 @@ When enabled, search results include surrounding chunks from the same source fil
 |----------|---------|-------------|
 | `MEMTOMEM_TIMEZONE` | `UTC` | Display timezone for timestamps (e.g. `Asia/Seoul`). Storage remains UTC |
 
+## Policy
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MEMTOMEM_POLICY__ENABLED` | `false` | Enable the background policy scheduler |
+| `MEMTOMEM_POLICY__SCHEDULER_INTERVAL_MINUTES` | `60.0` | Minutes between policy runs |
+| `MEMTOMEM_POLICY__MAX_ACTIONS_PER_RUN` | `100` | Cumulative action cap per scheduled run (checked between policies) |
+
+When enabled, all policies created via `mem_policy_add` are executed periodically. Policies can always be run on demand via `mem_policy_run` regardless of this setting. The action count semantics vary by policy type (e.g. archived chunks vs consolidated groups).
+
 ## Tool Mode
 
 | Variable | Default | Description |

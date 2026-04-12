@@ -5,6 +5,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+### Added
+- **PolicyScheduler**: background loop that periodically runs all enabled
+  memory lifecycle policies (`auto_archive`, `auto_consolidate`,
+  `auto_expire`, `auto_tag`). Controlled by `MEMTOMEM_POLICY__ENABLED`
+  and `MEMTOMEM_POLICY__SCHEDULER_INTERVAL_MINUTES`. Follows the existing
+  `ConsolidationScheduler` / `HealthWatchdog` lifecycle pattern.
+  - `run_all_enabled()` gains a `max_actions` parameter — cumulative
+    action cap checked between policies (individual handlers run
+    atomically). Configurable via `MEMTOMEM_POLICY__MAX_ACTIONS_PER_RUN`.
+  - Consecutive failure counter: escalates to WARNING after 3 failures.
+  - Cache invalidation only when mutations actually occur.
+
 ## [0.1.6] — 2026-04-12
 
 ### Added
