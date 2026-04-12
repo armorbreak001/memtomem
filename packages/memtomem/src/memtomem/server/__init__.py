@@ -38,6 +38,7 @@ from memtomem.server.lifespan import app_lifespan
 mcp = FastMCP("memtomem", lifespan=app_lifespan)
 
 # ── Register ALL tools (decorators bind to `mcp` on import) ───────────
+from memtomem.server.tools.ask import mem_ask  # noqa: E402, F401
 from memtomem.server.tools.indexing import mem_index  # noqa: E402, F401
 from memtomem.server.tools.memory_crud import mem_add, mem_batch_add, mem_delete, mem_edit  # noqa: E402, F401
 from memtomem.server.tools.recall import mem_recall  # noqa: E402, F401
@@ -49,6 +50,7 @@ from memtomem.server.tools.status_config import (
     mem_status,
 )  # noqa: E402, F401
 from memtomem.server.tools.namespace import (
+    mem_ns_assign,
     mem_ns_list,
     mem_ns_delete,
     mem_ns_set,
@@ -57,6 +59,7 @@ from memtomem.server.tools.namespace import (
     mem_ns_update,
 )  # noqa: E402, F401
 from memtomem.server.tools.dedup_decay import (
+    mem_cleanup_orphans,
     mem_dedup_scan,
     mem_dedup_merge,
     mem_decay_scan,
@@ -93,7 +96,7 @@ from memtomem.server.tools.context import (
     mem_context_diff,
     mem_context_sync,
 )  # noqa: E402, F401
-from memtomem.server.tools.ingest import mem_ingest  # noqa: E402, F401
+from memtomem.server.tools.ingest import mem_ingest  # noqa: E402, F401  — no @mcp.tool; import triggers @register("ingest") for mem_do routing
 from memtomem.server.tools.watchdog import mem_watchdog  # noqa: E402, F401
 from memtomem.server.tools.meta import mem_do  # noqa: E402, F401
 import memtomem.server.resources  # noqa: E402, F401  — register MCP resources
@@ -101,7 +104,7 @@ import memtomem.server.resources  # noqa: E402, F401  — register MCP resources
 # ── Tool mode: core | standard | full ─────────────────────────────────
 # Set MEMTOMEM_TOOL_MODE env var to control which tools are exposed.
 #   core     → 9 tools (8 core + mem_do). Default. mem_do routes to all others.
-#   standard → ~30 tools (core + frequently used packs as individual tools + mem_do)
+#   standard → core + frequently used packs as individual tools + mem_do
 #   full     → all tools registered individually (no mem_do needed)
 
 _CORE_TOOLS = {
@@ -163,7 +166,7 @@ def main() -> None:
 
         _lock_fp.write(str(os.getpid()))
         _lock_fp.flush()
-        atexit.register(lambda: pid_file.unlink(missing_ok=True))
-        atexit.register(lambda: _lock_fp.close())
+        atexit.register(lambda: _lock_fp.close())  # LIFO: runs second
+        atexit.register(lambda: pid_file.unlink(missing_ok=True))  # LIFO: runs first
 
     mcp.run()

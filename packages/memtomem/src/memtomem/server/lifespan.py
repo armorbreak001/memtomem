@@ -84,8 +84,11 @@ def _load_dotenv() -> None:
 
 
 async def _shutdown(watcher: FileWatcher, comp: Components) -> None:
-    await watcher.stop()
-    await close_components(comp)
+    for label, coro in [("watcher", watcher.stop()), ("components", close_components(comp))]:
+        try:
+            await coro
+        except Exception:
+            logger.warning("Shutdown step '%s' failed", label, exc_info=True)
 
 
 # ---------------------------------------------------------------------------

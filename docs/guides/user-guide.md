@@ -19,7 +19,7 @@
 | **RRF** | Reciprocal Rank Fusion — the algorithm that merges keyword and meaning results |
 | **Chunk** | A section of a file (one heading, one function, one key) — the unit of indexing |
 | **Namespace** | A label to organize memories (e.g., "work", "personal", "project-x") |
-| **`mem_do`** | Meta-tool that routes to 61 advanced actions (with aliases). Use `mem_do(action="help")` to list all |
+| **`mem_do`** | Meta-tool that routes to all non-core actions (with aliases). Use `mem_do(action="help")` to list all |
 
 ---
 
@@ -85,7 +85,7 @@ In **core** tool mode (default), most features are accessed through `mem_do(acti
 - **Maintenance** uses descriptive names: `dedup_scan`, `decay_expire`, `cleanup_orphans`
 - **Analytics** uses short names: `eval`, `activity`, `timeline`, `reflect`
 
-Use `mem_do(action="help")` to see all 64 actions, or `mem_do(action="help", params={"category": "sessions"})` for per-category details with parameter descriptions. Common aliases are supported (e.g. `health_report` → `eval`, `namespace_set` → `ns_set`).
+Use `mem_do(action="help")` to see all available actions, or `mem_do(action="help", params={"category": "sessions"})` for per-category details with parameter descriptions. Common aliases are supported (e.g. `health_report` → `eval`, `namespace_set` → `ns_set`).
 
 ---
 

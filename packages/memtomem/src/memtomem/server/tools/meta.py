@@ -41,7 +41,7 @@ async def mem_do(
 
     Categories: crud, namespace, tags, sessions, scratch, relations,
     analytics, maintenance, policy, entity, multi_agent, importers,
-    procedures, advanced
+    procedures, advanced, ingest, search, context
 
     Args:
         action: The action name (e.g. "session_start", "tag_list", "help")

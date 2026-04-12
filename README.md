@@ -85,7 +85,7 @@ See [MCP Client Setup](docs/guides/mcp-clients.md) for Cursor / Windsurf / Claud
 - **Namespaces** — organize memories into scoped groups with auto-derivation from folder names
 - **Maintenance** — near-duplicate detection, time-based decay, TTL expiration, auto-tagging
 - **Web UI** — visual dashboard for search, sources, tags, sessions, health monitoring
-- **72 MCP tools** — `mem_do` meta-tool routes 64 actions in `core` mode for minimal context usage
+- **MCP tools** — `mem_do` meta-tool routes all non-core actions in `core` mode for minimal context usage
 
 ---
 

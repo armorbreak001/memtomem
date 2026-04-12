@@ -200,6 +200,7 @@ async def mem_expand(
     return "\n\n".join(parts)
 
 
+@tool_handler
 @register("search")
 async def mem_increment_access(
     chunk_ids: list[str],
