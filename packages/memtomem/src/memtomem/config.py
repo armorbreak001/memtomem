@@ -9,15 +9,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class EmbeddingConfig(BaseSettings):
-    provider: str = "ollama"
-    model: str = "nomic-embed-text"
-    dimension: int = 768
-    base_url: str = "http://localhost:11434"
+    provider: str = "none"
+    model: str = ""
+    dimension: int = 0
+    base_url: str = ""
     api_key: str = ""
     batch_size: int = 64
     max_concurrent_batches: int = 4
 
-    @field_validator("dimension", "batch_size", "max_concurrent_batches")
+    @field_validator("dimension")
+    @classmethod
+    def dimension_non_negative(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("must be non-negative (0 = no embeddings)")
+        return v
+
+    @field_validator("batch_size", "max_concurrent_batches")
     @classmethod
     def must_be_positive(cls, v: int) -> int:
         if v <= 0:

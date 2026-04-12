@@ -94,48 +94,63 @@ def _detect_project_dir() -> str | None:
 def _step_embedding(state: dict) -> None:
     step_header(1, "Embedding Provider")
     click.echo("  Choose how to generate embeddings:")
-    click.echo("    [1] Ollama — local, free, needs GPU (recommended)")
-    click.echo("    [2] OpenAI — cloud, paid, no GPU needed")
-    choice = nav_prompt("  Select", type=click.IntRange(1, 2), default=1)
+    click.echo("    [1] Quick start — keyword search only, no setup needed (recommended)")
+    click.echo("    [2] Ollama — local dense embeddings, needs GPU")
+    click.echo("    [3] OpenAI — cloud dense embeddings, needs API key")
+    choice = nav_prompt("  Select", type=click.IntRange(1, 3), default=1)
     click.echo()
 
-    provider = "ollama" if choice == 1 else "openai"
     api_key = ""
 
-    if provider == "ollama":
+    if choice == 1:
+        # BM25-only mode: no embeddings, no external dependencies
+        provider = "none"
+        model = ""
+        dimension = 0
+        click.secho("  BM25 keyword search — ready to go, no setup needed.", fg="green")
+        click.echo("  You can add dense embeddings later by re-running 'mm init'.")
+
+    elif choice == 2:
+        provider = "ollama"
         if not _ollama_available():
-            click.secho("  Ollama not found.", fg="red")
-            click.echo("  Install from https://ollama.com then re-run 'mm init'.")
-            raise SystemExit(1)
-
-        if not _ollama_running():
-            click.secho("  Ollama not running. Starting 'ollama serve'...", fg="yellow")
-            click.echo("  Run 'ollama serve' in another terminal if this fails.")
+            click.secho("  Ollama not found.", fg="yellow")
+            click.echo("  Install from https://ollama.com, then run 'mm index' to embed.")
+            click.echo("  Saving Ollama config now so you're ready after install.")
             click.echo()
-
-        click.echo("  Available models:")
-        click.echo("    [1] nomic-embed-text — English, fast (768d)")
-        click.echo("    [2] bge-m3 — multilingual, higher accuracy (1024d)")
-        model_choice = nav_prompt("  Select", type=click.IntRange(1, 2), default=1)
-
-        models = {1: ("nomic-embed-text", 768), 2: ("bge-m3", 1024)}
-        model, dimension = models[model_choice]
-
-        if _ollama_has_model(model):
-            click.secho(f"  Model '{model}' is ready.", fg="green")
+            # Record intent — config is written, embedding runs when Ollama is available.
+            model = "nomic-embed-text"
+            dimension = 768
         else:
-            pull = nav_confirm(f"  Model '{model}' not found. Pull now?", default=True)
-            if pull:
-                click.echo(f"  Pulling {model}... (this may take a few minutes)")
-                result = _run(["ollama", "pull", model], timeout=600)
-                if result.returncode == 0:
-                    click.secho(f"  Model '{model}' pulled successfully.", fg="green")
-                else:
-                    click.secho(f"  Pull failed: {result.stderr.strip()}", fg="red")
-                    click.echo("  You can pull manually: ollama pull " + model)
+            if not _ollama_running():
+                click.secho("  Ollama not running. Starting 'ollama serve'...", fg="yellow")
+                click.echo("  Run 'ollama serve' in another terminal if this fails.")
+                click.echo()
+
+            click.echo("  Available models:")
+            click.echo("    [1] nomic-embed-text — English, fast (768d)")
+            click.echo("    [2] bge-m3 — multilingual, higher accuracy (1024d)")
+            model_choice = nav_prompt("  Select", type=click.IntRange(1, 2), default=1)
+
+            models = {1: ("nomic-embed-text", 768), 2: ("bge-m3", 1024)}
+            model, dimension = models[model_choice]
+
+            if _ollama_has_model(model):
+                click.secho(f"  Model '{model}' is ready.", fg="green")
             else:
-                click.echo(f"  Remember to run: ollama pull {model}")
+                pull = nav_confirm(f"  Model '{model}' not found. Pull now?", default=True)
+                if pull:
+                    click.echo(f"  Pulling {model}... (this may take a few minutes)")
+                    result = _run(["ollama", "pull", model], timeout=600)
+                    if result.returncode == 0:
+                        click.secho(f"  Model '{model}' pulled successfully.", fg="green")
+                    else:
+                        click.secho(f"  Pull failed: {result.stderr.strip()}", fg="red")
+                        click.echo("  You can pull manually: ollama pull " + model)
+                else:
+                    click.echo(f"  Remember to run: ollama pull {model}")
+
     else:
+        provider = "openai"
         click.echo("  Available models:")
         click.echo("    [1] text-embedding-3-small — balanced (1536d)")
         click.echo("    [2] text-embedding-3-large — highest accuracy (3072d)")
@@ -355,7 +370,10 @@ def _write_config_and_summary(state: dict) -> None:
     click.echo()
     click.secho("  Setup complete!", fg="green", bold=True)
     click.echo()
-    click.echo(f"  Provider:   {state['provider']}/{state['model']} ({state['dimension']}d)")
+    if state["provider"] == "none":
+        click.echo("  Provider:   none (BM25 keyword search only)")
+    else:
+        click.echo(f"  Provider:   {state['provider']}/{state['model']} ({state['dimension']}d)")
     click.echo(f"  Storage:    {state['db_path']}")
     click.echo(f"  Memory:     {state['memory_dir']}")
     ns_label = "auto" if state["enable_auto_ns"] else "manual"
@@ -419,7 +437,7 @@ _MODEL_DIMS: dict[str, int] = {
 @click.option(
     "-y", "--non-interactive", is_flag=True, help="Skip wizard, use defaults or provided options"
 )
-@click.option("--provider", type=click.Choice(["ollama", "openai"]), default=None)
+@click.option("--provider", type=click.Choice(["none", "ollama", "openai"]), default=None)
 @click.option("--model", default=None, help="Embedding model name")
 @click.option("--memory-dir", default=None, help="Memory directory path")
 @click.option("--db-path", default=None, help="SQLite DB path")
@@ -469,10 +487,16 @@ def init(
         click.echo()
 
     if non_interactive:
-        _provider = provider or "ollama"
-        _model = model or (
-            "nomic-embed-text" if _provider == "ollama" else "text-embedding-3-small"
-        )
+        _provider = provider or "none"
+        if _provider == "none":
+            _model = ""
+            _dimension = 0
+        elif _provider == "ollama":
+            _model = model or "nomic-embed-text"
+            _dimension = _MODEL_DIMS.get(_model, 768)
+        else:
+            _model = model or "text-embedding-3-small"
+            _dimension = _MODEL_DIMS.get(_model, 1536)
         _memory_dir = memory_dir or "~/memories"
 
         # Auto-create memory directory
@@ -484,7 +508,7 @@ def init(
             {
                 "provider": _provider,
                 "model": _model,
-                "dimension": _MODEL_DIMS.get(_model, 768),
+                "dimension": _dimension,
                 "api_key": api_key or "",
                 "memory_dir": _memory_dir,
                 "db_path": db_path or str(Path("~/.memtomem").expanduser() / "memtomem.db"),

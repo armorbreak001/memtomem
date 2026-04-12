@@ -272,8 +272,9 @@ class IndexEngine:
             existing_hashes = await self._storage.get_chunk_hashes(file_path)
             diff_result = compute_diff(existing_hashes, new_chunks)
 
-        # Embed BEFORE any deletion — if embedding fails, DB stays untouched
-        if diff_result.to_upsert:
+        # Embed BEFORE any deletion — if embedding fails, DB stays untouched.
+        # Skip embedding entirely when using the noop provider (BM25-only mode).
+        if diff_result.to_upsert and self._embedder.dimension > 0:
             texts = [c.retrieval_content for c in diff_result.to_upsert]
             try:
                 embeddings = await self._embedder.embed_texts(texts)

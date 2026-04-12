@@ -17,6 +17,7 @@ import pytest
 
 from memtomem.config import EmbeddingConfig
 from memtomem.embedding.factory import create_embedder
+from memtomem.embedding.noop import NoopEmbedder
 from memtomem.embedding.ollama import OllamaEmbedder
 from memtomem.embedding.openai import OpenAIEmbedder
 from memtomem.embedding.retry import _parse_retry_after, with_retry
@@ -26,6 +27,7 @@ from memtomem.errors import ConfigError, EmbeddingError
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _ollama_config(**overrides) -> EmbeddingConfig:
     defaults = dict(
@@ -55,8 +57,9 @@ def _openai_config(**overrides) -> EmbeddingConfig:
     return EmbeddingConfig(**defaults)
 
 
-def _make_httpx_response(status_code: int = 200, json_data: dict | None = None,
-                         headers: dict | None = None) -> httpx.Response:
+def _make_httpx_response(
+    status_code: int = 200, json_data: dict | None = None, headers: dict | None = None
+) -> httpx.Response:
     """Build a minimal httpx.Response for mocking."""
     resp = httpx.Response(
         status_code=status_code,
@@ -70,6 +73,7 @@ def _make_httpx_response(status_code: int = 200, json_data: dict | None = None,
 # ---------------------------------------------------------------------------
 # 1. EmbeddingProvider protocol conformance
 # ---------------------------------------------------------------------------
+
 
 class TestEmbeddingProviderProtocol:
     """Verify that OllamaEmbedder and OpenAIEmbedder satisfy the Protocol."""
@@ -109,8 +113,8 @@ class TestEmbeddingProviderProtocol:
 # 2. OllamaEmbedder — mocked httpx
 # ---------------------------------------------------------------------------
 
-class TestOllamaEmbedder:
 
+class TestOllamaEmbedder:
     async def test_embed_batch_returns_vectors(self):
         """embed_texts with two texts returns two vectors."""
         config = _ollama_config(dimension=3)
@@ -245,8 +249,8 @@ class TestOllamaEmbedder:
 # 3. OpenAIEmbedder — mocked httpx
 # ---------------------------------------------------------------------------
 
-class TestOpenAIEmbedder:
 
+class TestOpenAIEmbedder:
     async def test_embed_batch_returns_vectors(self):
         """embed_texts returns sorted-by-index vectors."""
         config = _openai_config(dimension=3)
@@ -356,8 +360,8 @@ class TestOpenAIEmbedder:
 # 4. create_embedder factory
 # ---------------------------------------------------------------------------
 
-class TestCreateEmbedder:
 
+class TestCreateEmbedder:
     def test_ollama_provider(self):
         config = _ollama_config(provider="ollama")
         embedder = create_embedder(config)
@@ -373,6 +377,11 @@ class TestCreateEmbedder:
         embedder = create_embedder(config)
         assert isinstance(embedder, OllamaEmbedder)
 
+    def test_none_provider(self):
+        config = EmbeddingConfig(provider="none", model="", dimension=0, base_url="")
+        embedder = create_embedder(config)
+        assert isinstance(embedder, NoopEmbedder)
+
     def test_unknown_provider_raises_config_error(self):
         config = _ollama_config(provider="unknown_backend")
         with pytest.raises(ConfigError, match="Unknown embedding provider"):
@@ -380,11 +389,51 @@ class TestCreateEmbedder:
 
 
 # ---------------------------------------------------------------------------
+# 4.5. NoopEmbedder (BM25-only mode)
+# ---------------------------------------------------------------------------
+
+
+class TestNoopEmbedder:
+    """Verify NoopEmbedder satisfies the EmbeddingProvider protocol."""
+
+    def test_dimension_is_zero(self):
+        embedder = NoopEmbedder()
+        assert embedder.dimension == 0
+
+    def test_model_name_is_none(self):
+        embedder = NoopEmbedder()
+        assert embedder.model_name == "none"
+
+    @pytest.mark.anyio
+    async def test_embed_texts_returns_empty_lists(self):
+        embedder = NoopEmbedder()
+        result = await embedder.embed_texts(["hello", "world"])
+        assert result == [[], []]
+
+    @pytest.mark.anyio
+    async def test_embed_texts_empty_input(self):
+        embedder = NoopEmbedder()
+        result = await embedder.embed_texts([])
+        assert result == []
+
+    @pytest.mark.anyio
+    async def test_embed_query_returns_empty_list(self):
+        embedder = NoopEmbedder()
+        result = await embedder.embed_query("test query")
+        assert result == []
+
+    @pytest.mark.anyio
+    async def test_close_is_noop(self):
+        embedder = NoopEmbedder()
+        await embedder.close()  # should not raise
+
+
+# ---------------------------------------------------------------------------
 # 5. Retry logic — with_retry decorator and _parse_retry_after
 # ---------------------------------------------------------------------------
 
-class TestRetryDecorator:
 
+class TestRetryDecorator:
     async def test_succeeds_first_try(self):
         """Function succeeds on first attempt — no retries."""
         call_count = 0
@@ -444,6 +493,7 @@ class TestRetryDecorator:
     def test_invalid_max_attempts(self):
         """max_attempts < 1 raises ValueError at decoration time."""
         with pytest.raises(ValueError, match="max_attempts"):
+
             @with_retry(max_attempts=0)
             async def noop():
                 pass  # pragma: no cover
@@ -451,13 +501,13 @@ class TestRetryDecorator:
     def test_invalid_base_delay(self):
         """Negative base_delay raises ValueError at decoration time."""
         with pytest.raises(ValueError, match="base_delay"):
+
             @with_retry(base_delay=-1.0)
             async def noop():
                 pass  # pragma: no cover
 
 
 class TestParseRetryAfter:
-
     def test_none_input(self):
         assert _parse_retry_after(None) is None
 
