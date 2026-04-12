@@ -13,7 +13,7 @@ in a data-science, research, or agent-framework workflow.
 ## Prerequisites
 
 1. **Python 3.12+**
-2. **Ollama** running locally with the default embedding model:
+2. **Ollama** running locally with the default embedding model (notebooks 01–06):
    ```bash
    ollama serve
    ollama pull nomic-embed-text
@@ -33,6 +33,14 @@ in a data-science, research, or agent-framework workflow.
 5. **(Notebook 05 only)** LangGraph:
    ```bash
    uv pip install langgraph
+   ```
+6. **(Notebook 07)** ONNX embeddings (Ollama **not** required):
+   ```bash
+   uv pip install "memtomem[onnx]" jupyter ipykernel
+   ```
+7. **(Notebook 08)** LLM features — Ollama with a chat model:
+   ```bash
+   ollama pull llama3.2
    ```
 
 ## Running the notebooks
@@ -54,6 +62,8 @@ early with a clear error message if it is not.
 | 04 | [`04_search_tuning.ipynb`](04_search_tuning.ipynb) | Compare the same query under different search configurations — BM25-only, dense-only, balanced, with and without the context window. | ~15 min |
 | 05 | [`05_langgraph_integration.ipynb`](05_langgraph_integration.ipynb) | Wire `MemtomemStore` into a minimal two-node LangGraph agent that searches memtomem and writes findings back. | ~20 min |
 | 06 | [`06_lifecycle.ipynb`](06_lifecycle.ipynb) | The full memory lifecycle: hash-based incremental re-index on edit, surgical chunk delete, orphan cleanup after a file is removed, and `force=True` full re-embed. | ~10 min |
+| 07 | [`07_embedding_providers.ipynb`](07_embedding_providers.ipynb) | Compare BM25-only, ONNX (local), and Ollama embedding providers. No Ollama required for the first two. | ~10 min |
+| 08 | [`08_llm_features.ipynb`](08_llm_features.ipynb) | LLM-powered auto-tagging, entity extraction, and query expansion. Shows heuristic fallback when LLM is unavailable. | ~15 min |
 
 ## How memories are stored
 
