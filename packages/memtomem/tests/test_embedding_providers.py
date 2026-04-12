@@ -4,13 +4,14 @@ Covers:
   - EmbeddingProvider protocol conformance
   - OllamaEmbedder (mocked httpx)
   - OpenAIEmbedder (mocked httpx)
+  - OnnxEmbedder (mocked fastembed)
   - create_embedder factory
   - with_retry decorator & _parse_retry_after helper
 """
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -19,6 +20,7 @@ from memtomem.config import EmbeddingConfig
 from memtomem.embedding.factory import create_embedder
 from memtomem.embedding.noop import NoopEmbedder
 from memtomem.embedding.ollama import OllamaEmbedder
+from memtomem.embedding.onnx import OnnxEmbedder
 from memtomem.embedding.openai import OpenAIEmbedder
 from memtomem.embedding.retry import _parse_retry_after, with_retry
 from memtomem.errors import ConfigError, EmbeddingError
@@ -35,6 +37,20 @@ def _ollama_config(**overrides) -> EmbeddingConfig:
         model="nomic-embed-text",
         dimension=768,
         base_url="http://localhost:11434",
+        api_key="",
+        batch_size=64,
+        max_concurrent_batches=4,
+    )
+    defaults.update(overrides)
+    return EmbeddingConfig(**defaults)
+
+
+def _onnx_config(**overrides) -> EmbeddingConfig:
+    defaults = dict(
+        provider="onnx",
+        model="all-MiniLM-L6-v2",
+        dimension=384,
+        base_url="",
         api_key="",
         batch_size=64,
         max_concurrent_batches=4,
@@ -77,6 +93,14 @@ def _make_httpx_response(
 
 class TestEmbeddingProviderProtocol:
     """Verify that OllamaEmbedder and OpenAIEmbedder satisfy the Protocol."""
+
+    def test_onnx_has_required_attributes(self):
+        embedder = OnnxEmbedder(_onnx_config())
+        assert hasattr(embedder, "dimension")
+        assert hasattr(embedder, "model_name")
+        assert hasattr(embedder, "embed_texts")
+        assert hasattr(embedder, "embed_query")
+        assert hasattr(embedder, "close")
 
     def test_ollama_has_required_attributes(self):
         embedder = OllamaEmbedder(_ollama_config())
@@ -357,11 +381,114 @@ class TestOpenAIEmbedder:
 
 
 # ---------------------------------------------------------------------------
+# 3.5. OnnxEmbedder — mocked fastembed
+# ---------------------------------------------------------------------------
+
+
+def _make_fake_embedding_model(vectors: list[list[float]]):
+    """Return a mock fastembed TextEmbedding whose embed() yields vectors."""
+    import numpy as np
+
+    model = MagicMock()
+    model.embed.return_value = iter(np.array(v) for v in vectors)
+    return model
+
+
+class TestOnnxEmbedder:
+    def test_dimension_and_model(self):
+        embedder = OnnxEmbedder(_onnx_config(dimension=384, model="all-MiniLM-L6-v2"))
+        assert embedder.dimension == 384
+        assert embedder.model_name == "all-MiniLM-L6-v2"
+
+    @pytest.mark.anyio
+    async def test_embed_texts_returns_vectors(self):
+        """embed_texts returns list of float lists via mocked fastembed."""
+        config = _onnx_config(dimension=3)
+        embedder = OnnxEmbedder(config)
+        embedder._model = _make_fake_embedding_model(
+            [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+        )
+
+        result = await embedder.embed_texts(["hello", "world"])
+
+        assert len(result) == 2
+        assert result[0] == pytest.approx([0.1, 0.2, 0.3])
+        assert result[1] == pytest.approx([0.4, 0.5, 0.6])
+
+    @pytest.mark.anyio
+    async def test_embed_query_returns_single_vector(self):
+        config = _onnx_config(dimension=2)
+        embedder = OnnxEmbedder(config)
+        embedder._model = _make_fake_embedding_model([[1.0, 2.0]])
+
+        result = await embedder.embed_query("test query")
+
+        assert result == pytest.approx([1.0, 2.0])
+
+    @pytest.mark.anyio
+    async def test_embed_texts_empty_input(self):
+        embedder = OnnxEmbedder(_onnx_config())
+        result = await embedder.embed_texts([])
+        assert result == []
+
+    @pytest.mark.anyio
+    async def test_embed_query_empty_raises(self):
+        embedder = OnnxEmbedder(_onnx_config())
+        with pytest.raises(EmbeddingError, match="empty"):
+            await embedder.embed_query("")
+
+    @pytest.mark.anyio
+    async def test_fastembed_not_installed_raises(self):
+        """ImportError from fastembed is wrapped with install instructions."""
+        config = _onnx_config()
+        embedder = OnnxEmbedder(config)
+        embedder._model = None  # ensure lazy init triggers
+
+        with patch.dict("sys.modules", {"fastembed": None}):
+            with pytest.raises(EmbeddingError, match="pip install memtomem\\[onnx\\]"):
+                await embedder.embed_texts(["test"])
+
+    @pytest.mark.anyio
+    async def test_inference_error_wrapped(self):
+        """Model inference exception is wrapped in EmbeddingError."""
+        config = _onnx_config()
+        embedder = OnnxEmbedder(config)
+        bad_model = MagicMock()
+        bad_model.embed.side_effect = RuntimeError("ONNX inference failed")
+        embedder._model = bad_model
+
+        with pytest.raises(EmbeddingError, match="ONNX embedding failed"):
+            await embedder.embed_texts(["test"])
+
+    @pytest.mark.anyio
+    async def test_close_clears_model(self):
+        config = _onnx_config()
+        embedder = OnnxEmbedder(config)
+        embedder._model = MagicMock()
+
+        await embedder.close()
+
+        assert embedder._model is None
+
+    @pytest.mark.anyio
+    async def test_close_without_model_is_noop(self):
+        embedder = OnnxEmbedder(_onnx_config())
+        assert embedder._model is None
+        await embedder.close()
+        assert embedder._model is None
+
+
+# ---------------------------------------------------------------------------
 # 4. create_embedder factory
 # ---------------------------------------------------------------------------
 
 
 class TestCreateEmbedder:
+    def test_onnx_provider(self):
+        config = _onnx_config(provider="onnx")
+        embedder = create_embedder(config)
+        assert isinstance(embedder, OnnxEmbedder)
+
     def test_ollama_provider(self):
         config = _ollama_config(provider="ollama")
         embedder = create_embedder(config)

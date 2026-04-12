@@ -1,19 +1,52 @@
 # Embedding Providers
 
-memtomem supports two embedding providers out of the box: **Ollama** (local, default) and **OpenAI** (cloud). The provider, model, and vector dimension must always be set together — dimension is **not auto-detected**, and a mismatch will cause indexing errors.
+memtomem supports three embedding providers: **ONNX** (local, no server), **Ollama** (local server), and **OpenAI** (cloud). The provider, model, and vector dimension must always be set together — dimension is **not auto-detected**, and a mismatch will cause indexing errors.
 
 ## Supported Models
 
 | Model | Provider | Dimension | Best for |
 |-------|----------|-----------|----------|
-| `nomic-embed-text` (default) | Ollama | 768 | General English, lightweight, no GPU |
-| `bge-m3` | Ollama | 1024 | Multilingual (KR/EN/JP/CN), higher accuracy |
+| `all-MiniLM-L6-v2` | ONNX | 384 | Quick local dense search, tiny (~22 MB) |
+| `bge-small-en-v1.5` | ONNX | 384 | Better English accuracy (~33 MB) |
+| `bge-m3` | ONNX / Ollama | 1024 | Multilingual (KR/EN/JP/CN), highest accuracy |
+| `nomic-embed-text` | Ollama | 768 | General English, lightweight, no GPU |
 | `text-embedding-3-small` | OpenAI | 1536 | Cloud-based, no GPU needed |
 | `text-embedding-3-large` | OpenAI | 3072 | Best accuracy |
 
 You can switch models via `mm init` (interactive wizard) or `mm embedding-reset` (handles the dimension migration safely).
 
-## Ollama (default, local)
+## ONNX (local, no server)
+
+Install the optional dependency:
+
+```bash
+pip install memtomem[onnx]
+# or with uv:
+uv pip install memtomem[onnx]
+```
+
+Configure via environment variables:
+
+```bash
+export MEMTOMEM_EMBEDDING__PROVIDER=onnx
+export MEMTOMEM_EMBEDDING__MODEL=all-MiniLM-L6-v2
+export MEMTOMEM_EMBEDDING__DIMENSION=384
+```
+
+Or run `mm init` and select "Local ONNX".
+
+The model is downloaded automatically on first use (~22 MB for all-MiniLM-L6-v2) and cached in `~/.cache/fastembed/`.
+
+For multilingual content (Korean, Chinese, Japanese):
+
+```bash
+export MEMTOMEM_EMBEDDING__MODEL=bge-m3
+export MEMTOMEM_EMBEDDING__DIMENSION=1024
+```
+
+> **Note:** `bge-m3` is ~1.2 GB — similar in size to Ollama models. For lightweight English-only search, use `all-MiniLM-L6-v2` or `bge-small-en-v1.5`.
+
+## Ollama (local server)
 
 ```bash
 # Pull the default model (one-time, ~270MB)

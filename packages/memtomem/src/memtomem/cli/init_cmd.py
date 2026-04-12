@@ -95,9 +95,10 @@ def _step_embedding(state: dict) -> None:
     step_header(1, "Embedding Provider")
     click.echo("  Choose how to generate embeddings:")
     click.echo("    [1] Quick start — keyword search only, no setup needed (recommended)")
-    click.echo("    [2] Ollama — local dense embeddings, needs GPU")
-    click.echo("    [3] OpenAI — cloud dense embeddings, needs API key")
-    choice = nav_prompt("  Select", type=click.IntRange(1, 3), default=1)
+    click.echo("    [2] Local ONNX — dense search, no server needed (pip install memtomem[onnx])")
+    click.echo("    [3] Ollama — local dense embeddings, needs GPU")
+    click.echo("    [4] OpenAI — cloud dense embeddings, needs API key")
+    choice = nav_prompt("  Select", type=click.IntRange(1, 4), default=1)
     click.echo()
 
     api_key = ""
@@ -111,6 +112,43 @@ def _step_embedding(state: dict) -> None:
         click.echo("  You can add dense embeddings later by re-running 'mm init'.")
 
     elif choice == 2:
+        provider = "onnx"
+        _onnx_available = False
+        try:
+            import fastembed  # noqa: F401
+
+            _onnx_available = True
+        except ImportError:
+            click.secho("  fastembed not installed.", fg="yellow")
+            click.echo("  Install with: pip install memtomem[onnx]")
+            click.echo("  Saving ONNX config now so you're ready after install.")
+            click.echo()
+
+        click.echo("  Available models:")
+        click.echo("    [1] all-MiniLM-L6-v2 — English, fast, tiny (~22 MB, 384d)")
+        click.echo("    [2] bge-small-en-v1.5 — English, better accuracy (~33 MB, 384d)")
+        click.echo("    [3] bge-m3 — multilingual KR/EN/JP/CN (~1.2 GB, 1024d)")
+        model_choice = nav_prompt("  Select", type=click.IntRange(1, 3), default=1)
+
+        models = {
+            1: ("all-MiniLM-L6-v2", 384),
+            2: ("bge-small-en-v1.5", 384),
+            3: ("bge-m3", 1024),
+        }
+        model, dimension = models[model_choice]
+
+        if model_choice == 3:
+            click.secho(
+                "  Note: bge-m3 is ~1.2 GB (similar to Ollama models). "
+                "For lightweight EN-only search, choose option 1 or 2.",
+                fg="yellow",
+            )
+
+        if _onnx_available:
+            click.secho(f"  Model '{model}' selected.", fg="green")
+            click.echo("  It will be downloaded automatically on first indexing.")
+
+    elif choice == 3:
         provider = "ollama"
         if not _ollama_available():
             click.secho("  Ollama not found.", fg="yellow")
