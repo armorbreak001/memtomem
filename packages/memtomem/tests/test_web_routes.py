@@ -512,3 +512,27 @@ class TestEmbeddingStatus:
         assert resp.status_code == 200
         data = resp.json()
         assert data["has_mismatch"] is False
+
+
+# ---------------------------------------------------------------------------
+# GET /locales/*.json  (i18n files served via StaticFiles)
+# ---------------------------------------------------------------------------
+
+
+class TestLocaleEndpoints:
+    async def test_en_locale_served(self, client: AsyncClient):
+        resp = await client.get("/locales/en.json")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "nav.home" in data
+
+    async def test_ko_locale_served(self, client: AsyncClient):
+        resp = await client.get("/locales/ko.json")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "nav.home" in data
+
+    async def test_i18n_js_served(self, client: AsyncClient):
+        resp = await client.get("/i18n.js")
+        assert resp.status_code == 200
+        assert "i18n" in resp.text.lower()

@@ -19,7 +19,7 @@
   --red:     #e05a5a;
   --code-bg: #1d1f21;
   --radius:  6px;
-  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --font: 'Inter', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', 'Fira Code', monospace;
   /* Semantic bg/text aliases used by harness UI sections */
   --bg-primary:     var(--surface);
@@ -29,6 +29,10 @@
   --text-primary:   var(--text);
   --text-secondary: var(--muted);
 }
+
+/* Korean typography adjustments */
+[lang="ko"] { --font: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Inter', system-ui, sans-serif; }
+[lang="ko"] body { word-break: keep-all; }
 
 html { font-size: 14px; height: 100%; overflow: hidden; }
 body { background: var(--bg); color: var(--text); font-family: var(--font); height: 100%; overflow: hidden; display: flex; flex-direction: column; }

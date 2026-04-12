@@ -52,11 +52,16 @@ const STATE = {
     el.setAttribute('data-theme', 'light');
   }
   // Update toggle icon and finalize initialization on DOM ready
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const isDark = el.getAttribute('data-theme') !== 'light';
     qs('theme-toggle').textContent = isDark ? '🌙' : '☀️';
+    if (typeof I18N !== 'undefined') await I18N.init();
     renderRecentChips();
     _initTabHelp();
+    // Re-apply i18n when language changes (dynamic JS strings)
+    window.addEventListener('langchange', () => {
+      if (typeof I18N !== 'undefined') I18N.applyDOM();
+    });
   });
 })();
 
@@ -157,7 +162,7 @@ async function copyToClipboard(text) {
     ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
   }
-  showToast('Copied!', 'info');
+  showToast(t('toast.copied'), 'info');
 }
 
 // ── B3: Language Detection ──
@@ -445,7 +450,7 @@ async function checkEmbeddingMismatch() {
         await fetchServerConfig();
         showToast(res.message, 'success');
       } catch (err) {
-        showToast('Reset failed: ' + err.message, 'error');
+        showToast(t('toast.reset_failed', { error: err.message }), 'error');
       }
     }, { once: true });
   } catch (_) { /* non-critical */ }
@@ -1026,7 +1031,7 @@ function _attachResultTagRow(chunkId, liveTagsArr, bodyEl) {
         liveTagsArr.splice(idx, 0, tag);
         if (cached) cached.chunk.tags = [...liveTagsArr];
         tagRow.appendChild(_makeChip(tag));
-        showToast('Failed to remove tag: ' + err.message, 'error');
+        showToast(t('toast.tag_remove_failed', { error: err.message }), 'error');
       }
     });
     chip.appendChild(label);
@@ -1248,14 +1253,14 @@ qs('d-save-btn').addEventListener('click', async () => {
   try {
     _pushHistory(STATE.selectedChunkId, STATE.selectedOriginal);
     await api('PATCH', `/api/chunks/${STATE.selectedChunkId}`, { new_content: newContent });
-    showToast('Chunk saved.', 'success');
+    showToast(t('toast.chunk_saved'), 'success');
     STATE.selectedOriginal = newContent;
     _syncResultContent(STATE.selectedChunkId, newContent);
     _updateHistoryBtn(STATE.selectedChunkId);
     _markDataStale();
     loadStats();
   } catch (err) {
-    showToast('Save failed: ' + err.message, 'error');
+    showToast(t('toast.save_failed', { error: err.message }), 'error');
   } finally {
     btnLoading(btn, false);
   }
@@ -1274,13 +1279,13 @@ qs('d-delete-btn').addEventListener('click', async () => {
   if (!ok) return;
   try {
     await api('DELETE', `/api/chunks/${STATE.selectedChunkId}`);
-    showToast('Chunk deleted.', 'success');
+    showToast(t('toast.chunk_deleted'), 'success');
     clearDetail();
     _markDataStale();
     doSearch();
     loadStats();
   } catch (err) {
-    showToast('Delete failed: ' + err.message, 'error');
+    showToast(t('toast.delete_failed', { error: err.message }), 'error');
   }
 });
 
@@ -1291,7 +1296,7 @@ qs('d-reset-btn').addEventListener('click', () => {
   qs('d-diff-btn').dataset.mode = 'source';
   _setDetailMode('edit');
   _updateWordCount();
-  showToast('Content restored.', 'info');
+  showToast(t('toast.content_restored'), 'info');
 });
 
 // ── B2: Copy button ──
@@ -1508,7 +1513,7 @@ function renderTagChips(tags) {
       try {
         await api('PATCH', `/api/chunks/${STATE.selectedChunkId}/tags`, { tags: [...currentTags] });
       } catch (err) {
-        showToast('Failed to remove tag: ' + err.message, 'error');
+        showToast(t('toast.tag_remove_failed', { error: err.message }), 'error');
       }
     });
     chip.addEventListener('click', e => {
@@ -1543,9 +1548,9 @@ qs('d-tag-save-btn').addEventListener('click', async () => {
     renderTagChips(data.tags);
     _syncResultTags(STATE.selectedChunkId, data.tags);
     STATE.tagsTabStale = true;
-    showToast('Tags saved.', 'success');
+    showToast(t('toast.tags_saved'), 'success');
   } catch (err) {
-    showToast('Failed to save tags: ' + err.message, 'error');
+    showToast(t('toast.tag_save_failed', { error: err.message }), 'error');
   } finally {
     btnLoading(btn, false);
   }
@@ -1734,7 +1739,7 @@ function renderSourceTree(sources) {
         if (!ok) return;
         try {
           await api('DELETE', `/api/sources?path=${encodeURIComponent(s.path)}`);
-          showToast('Source deleted.', 'success');
+          showToast(t('toast.source_deleted'), 'success');
           STATE.allSources = STATE.allSources.filter(x => x.path !== s.path);
           renderSourceTree(_getFilteredSorted());
           hideBrowser();
@@ -1744,7 +1749,7 @@ function renderSourceTree(sources) {
           loadSourceFilter();
           loadStats();
         } catch (err) {
-          showToast('Delete failed: ' + err.message, 'error');
+          showToast(t('toast.delete_failed', { error: err.message }), 'error');
         }
       });
       group.appendChild(item);
@@ -1875,7 +1880,7 @@ async function browseSource(path, limit = 100) {
           try {
             await api('DELETE', `/api/chunks/${c.id}`);
             card.remove();
-            showToast('Chunk deleted.', 'success');
+            showToast(t('toast.chunk_deleted'), 'success');
             // Update count badge
             const countEl = content.querySelector('.badge-blue');
             const remaining = content.querySelectorAll('.chunk-card').length;
@@ -1885,7 +1890,7 @@ async function browseSource(path, limit = 100) {
             _markDataStale();
             loadStats();
           } catch (err) {
-            showToast('Delete failed: ' + err.message, 'error');
+            showToast(t('toast.delete_failed', { error: err.message }), 'error');
           }
         });
 
@@ -2006,13 +2011,13 @@ function _startChunkEdit(card, chunk, sourcePath) {
     saveBtn.textContent = 'Saving…';
     try {
       await api('PATCH', `/api/chunks/${chunk.id}`, { new_content: newContent });
-      showToast('Chunk updated.', 'success');
+      showToast(t('toast.chunk_updated'), 'success');
       _syncResultContent(chunk.id, newContent);
       _markDataStale();
       // Refresh the browser to show updated content
       browseSource(sourcePath, card.closest('#chunks-browser-content')?.querySelectorAll('.chunk-card').length > 100 ? 500 : 100);
     } catch (err) {
-      showToast('Update failed: ' + err.message, 'error');
+      showToast(t('toast.update_failed', { error: err.message }), 'error');
       saveBtn.disabled = false;
       saveBtn.textContent = 'Save';
     }
@@ -2050,7 +2055,7 @@ qs('index-btn').addEventListener('click', async () => {
     loadNamespaceDropdowns();
     loadSourceFilter();
   } catch (err) {
-    showToast('Indexing failed: ' + err.message, 'error');
+    showToast(t('toast.index_failed', { error: err.message }), 'error');
   } finally {
     btnLoading(btn, false);
     loadStats();
@@ -2083,7 +2088,7 @@ qs('add-btn').addEventListener('click', async () => {
     _markDataStale();
     loadStats();
   } catch (err) {
-    showToast('Save failed: ' + err.message, 'error');
+    showToast(t('toast.save_failed', { error: err.message }), 'error');
   } finally {
     btnLoading(btn, false);
   }
@@ -2188,7 +2193,7 @@ qs('add-btn').addEventListener('click', async () => {
       loadSourceFilter();
       loadStats();
     } catch (err) {
-      showToast('Upload failed: ' + err.message, 'error');
+      showToast(t('toast.upload_failed', { error: err.message }), 'error');
     } finally {
       btnLoading(btn, false);
     }
@@ -2322,7 +2327,7 @@ async function doMerge(rowEl, keepId, deleteIds) {
 
   try {
     await api('POST', '/api/dedup/merge', { keep_id: keepId, delete_ids: deleteIds });
-    showToast('Duplicate chunks merged.', 'success');
+    showToast(t('toast.dupes_merged'), 'success');
     rowEl.style.opacity = '0.45';
     // Bug #5: remove deleted chunks from search results
     STATE.lastResults = STATE.lastResults.filter(r => !deleteIds.includes(String(r.chunk.id)));
@@ -2336,7 +2341,7 @@ async function doMerge(rowEl, keepId, deleteIds) {
     }
     loadStats();
   } catch (err) {
-    showToast('Merge failed: ' + err.message, 'error');
+    showToast(t('toast.merge_failed', { error: err.message }), 'error');
     btns.forEach(b => { b.disabled = false; });
   }
 }
@@ -2409,7 +2414,7 @@ async function runDecayExpire() {
     }
     loadStats();
   } catch (err) {
-    showToast('Expire failed: ' + err.message, 'error');
+    showToast(t('toast.expire_failed', { error: err.message }), 'error');
     expireBtn.disabled = false;
   } finally {
     btnLoading(expireBtn, false);
@@ -2619,7 +2624,7 @@ async function runAutoTag() {
     showToast(`${label}${data.tagged_chunks} chunks tagged`, 'success');
     if (!dryRun) { loadTags(); loadStats(); _markDataStale(); }
   } catch (err) {
-    showToast('Auto-Tag failed: ' + err.message, 'error');
+    showToast(t('toast.autotag_failed', { error: err.message }), 'error');
   } finally {
     btnLoading(autotagBtn, false);
   }
@@ -2685,7 +2690,7 @@ async function runIndexStream() {
 
   es.onerror = () => {
     es.close();
-    showToast('Streaming failed. Try the Index button instead.', 'error');
+    showToast(t('toast.stream_fallback'), 'error');
     hide(progressEl);
     btnLoading(qs('index-stream-btn'), false);
     btnLoading(qs('index-btn'), false);
@@ -2770,7 +2775,7 @@ async function runImport() {
     loadSourceFilter();
     loadStats();
   } catch (err) {
-    showToast('Import failed: ' + err.message, 'error');
+    showToast(t('toast.import_failed', { error: err.message }), 'error');
   } finally {
     qs('imp-btn').disabled = false;
   }
@@ -3550,7 +3555,7 @@ async function _saveSection(section) {
 
     if (btn) btn.disabled = true;
   } catch (err) {
-    showToast('Config save failed: ' + err.message, 'error');
+    showToast(t('toast.config_save_failed', { error: err.message }), 'error');
   } finally {
     btnLoading(btn, false);
   }
@@ -3611,7 +3616,7 @@ function _showReindexWarning(applied) {
         btn.textContent = 'Done';
         btn.disabled = true;
       } catch (err) {
-        showToast('FTS rebuild failed: ' + err.message, 'error');
+        showToast(t('toast.fts_rebuild_failed', { error: err.message }), 'error');
       } finally {
         btnLoading(btn, false);
       }
@@ -3634,7 +3639,7 @@ function _showReindexWarning(applied) {
         _markDataStale();
         loadStats();
       } catch (err) {
-        showToast('Re-index failed: ' + err.message, 'error');
+        showToast(t('toast.reindex_failed', { error: err.message }), 'error');
       } finally {
         btnLoading(btn, false);
       }
@@ -3939,7 +3944,7 @@ qs('load-more-btn').addEventListener('click', async () => {
     const data = await api('GET', `/api/search?${params}`);
     renderResults(data.results);
   } catch (err) {
-    showToast('Error: ' + err.message, 'error');
+    showToast(t('toast.error', { error: err.message }), 'error');
   } finally {
     btnLoading(btn, false);
   }
@@ -4005,13 +4010,13 @@ qs('d-pin-btn').addEventListener('click', () => {
   const id = String(STATE.selectedChunkId);
   if (isPinned(id)) {
     unpinChunk(id);
-    showToast('Unpinned', 'info');
+    showToast(t('toast.unpinned'), 'info');
   } else {
     pinChunk(id, {
       source: qs('d-file').textContent || '',
       snippet: qs('d-editor').value.slice(0, 100),
     });
-    showToast('Pinned!', 'info');
+    showToast(t('toast.pinned'), 'info');
   }
   updatePinBtn(id);
   STATE.homeStale = true;
@@ -4054,7 +4059,7 @@ qs('settings-modal').addEventListener('click', e => {
 qs('settings-save-btn').addEventListener('click', () => {
   localStorage.setItem('m2m-default-tab', qs('settings-default-tab').value);
   localStorage.setItem('m2m-default-top-k', qs('settings-default-topk').value);
-  showToast('Settings saved', 'success');
+  showToast(t('toast.settings_saved'), 'success');
   hide(qs('settings-modal'));
 });
 qs('settings-reset-btn').addEventListener('click', () => {
@@ -4062,7 +4067,7 @@ qs('settings-reset-btn').addEventListener('click', () => {
   localStorage.removeItem('m2m-default-top-k');
   qs('settings-default-tab').value = 'search';
   qs('settings-default-topk').value = '10';
-  showToast('Settings reset to defaults', 'info');
+  showToast(t('toast.settings_reset'), 'info');
 });
 
 qs('shortcuts-close-btn').addEventListener('click', () => hide(qs('shortcuts-modal')));
@@ -4683,7 +4688,7 @@ function _renderSavedSelect() {
 
 qs('save-query-btn').addEventListener('click', () => {
   const q = qs('search-input').value.trim();
-  if (!q) { showToast('Enter a query first', 'error'); return; }
+  if (!q) { showToast(t('toast.enter_query'), 'error'); return; }
   const name = prompt('Save search as:', q);
   if (!name) return;
   const list = _getSavedQueries();
@@ -4708,7 +4713,7 @@ qs('saved-queries-select').addEventListener('change', () => {
 
 qs('delete-query-btn').addEventListener('click', () => {
   const idx = parseInt(qs('saved-queries-select').value);
-  if (isNaN(idx)) { showToast('Select a saved search to delete', 'error'); return; }
+  if (isNaN(idx)) { showToast(t('toast.select_saved'), 'error'); return; }
   const list = _getSavedQueries();
   const name = list[idx]?.name;
   list.splice(idx, 1);
@@ -4851,7 +4856,7 @@ qs('bulk-export-btn').addEventListener('click', () => {
 });
 
 qs('export-all-btn').addEventListener('click', () => {
-  if (!STATE.lastResults.length) { showToast('No results to export', 'error'); return; }
+  if (!STATE.lastResults.length) { showToast(t('toast.no_results_export'), 'error'); return; }
   downloadResults(STATE.lastResults, qs('export-format').value);
 });
 
@@ -4905,7 +4910,7 @@ qs('d-history-btn').addEventListener('click', () => {
         show(qs('d-diff')); hide(qs('d-editor'));
         const diffBtn = qs('d-diff-btn');
         show(diffBtn); diffBtn.textContent = 'Edit'; diffBtn.dataset.mode = 'diff';
-        showToast('Showing diff: history → current', 'info');
+        showToast(t('toast.diff_shown'), 'info');
       });
     });
   }
@@ -4954,7 +4959,7 @@ qs('group-toggle').addEventListener('click', () => {
     hide(qs('search-drop-overlay'));
     const files = [...e.dataTransfer.files].filter(f =>
       /\.(md|txt|py|js|ts|tsx|json|yaml|yml)$/i.test(f.name));
-    if (!files.length) { showToast('Only .md/.txt/.py/.js/.ts/.json/.yaml files accepted', 'error'); return; }
+    if (!files.length) { showToast(t('toast.file_filter'), 'error'); return; }
     const fd = new FormData();
     files.forEach(f => fd.append('files', f));
     showToast(`Indexing ${files.length} file${files.length > 1 ? 's' : ''}…`, 'info');
@@ -4971,7 +4976,7 @@ qs('group-toggle').addEventListener('click', () => {
       loadSourceFilter();
       loadStats();
     } catch (err) {
-      showToast('Upload failed: ' + err.message, 'error');
+      showToast(t('toast.upload_failed', { error: err.message }), 'error');
     }
   });
 }
@@ -5127,11 +5132,11 @@ function editNamespaceMeta(ns, card) {
     body.color = colorVal === '#808080' ? '' : colorVal;
     try {
       await api('PATCH', `/api/namespaces/${encodeURIComponent(ns.namespace)}`, body);
-      showToast('Namespace updated', 'success');
+      showToast(t('toast.ns_updated'), 'success');
       loadNamespacesTab();
       loadNamespaceDropdowns();
     } catch (err) {
-      showToast('Failed: ' + err.message, 'error');
+      showToast(t('toast.error', { error: err.message }), 'error');
     }
   });
 
@@ -5150,7 +5155,7 @@ async function renameNamespace(oldName) {
     loadNamespacesTab();
     loadNamespaceDropdowns();
   } catch (err) {
-    showToast('Rename failed: ' + err.message, 'error');
+    showToast(t('toast.rename_failed', { error: err.message }), 'error');
   }
 }
 
@@ -5166,7 +5171,7 @@ async function deleteNamespace(name) {
     loadNamespaceDropdowns();
     loadStats();
   } catch (err) {
-    showToast('Delete failed: ' + err.message, 'error');
+    showToast(t('toast.delete_failed', { error: err.message }), 'error');
   }
 }
 
@@ -5176,7 +5181,7 @@ async function deleteNamespace(name) {
 
 qs('save-star-btn').addEventListener('click', () => {
   const q = qs('search-input').value.trim();
-  if (!q) { showToast('Enter a query first', 'error'); return; }
+  if (!q) { showToast(t('toast.enter_query'), 'error'); return; }
   const list = _getSavedQueries();
   const exists = list.some(s => s.query === q);
   if (exists) {
@@ -5186,7 +5191,7 @@ qs('save-star-btn').addEventListener('click', () => {
     _setSavedQueries(list);
     qs('save-star-btn').textContent = '☆';
     qs('save-star-btn').classList.remove('starred');
-    showToast('Search removed from saved', 'info');
+    showToast(t('toast.search_removed'), 'info');
   } else {
     const name = q.length > 40 ? q.slice(0, 40) + '…' : q;
     const nsFilter = qs('ns-filter').value;
@@ -6082,7 +6087,7 @@ let _watchdogEnabled = false;
 
 async function runWatchdogNow() {
   if (!_watchdogEnabled) {
-    showToast('Health watchdog is disabled. Set MEMTOMEM_HEALTH_WATCHDOG__ENABLED=true to enable.', 'error');
+    showToast(t('toast.watchdog_disabled'), 'error');
     return;
   }
   const bar = qs('watchdog-status-bar');
