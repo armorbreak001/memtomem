@@ -18,7 +18,7 @@ ollama pull nomic-embed-text    # ~270MB, one-time
 # 2. Install memtomem
 uv tool install memtomem        # or: pipx install memtomem
 
-# 3. Run the 7-step setup wizard (picks embedding, memory folder, editor)
+# 3. Run the 8-step setup wizard (picks embedding, memory folder, editor)
 mm init    # on PATH after `uv tool install` — no `uv run` needed
 ```
 
@@ -28,7 +28,7 @@ Then in your AI editor, ask:
 "Call the mem_status tool"   →  confirms the server is connected
 "Index my notes folder"      →  mem_index(path="~/notes")
 "Search for deployment"      →  mem_search(query="deployment checklist")
-"Remember this insight"      →  mem_add(content="...", tags="ops")
+"Remember this insight"      →  mem_add(content="...", tags=["ops"])
 ```
 
 That's it. Your agent now has a long-term memory built from plain markdown files.
@@ -71,7 +71,7 @@ Or add to `.mcp.json` for Cursor / Windsurf / Claude Desktop:
 - **🧹 Maintenance** — near-duplicate detection with merge, time-based score decay, TTL expiration, auto-tagging
 - **🔄 Export / import** — JSON bundle backup and restore with re-embedding
 - **🌐 Web UI** — full-featured SPA dashboard for search, sources, indexing, tags, sessions, health monitoring
-- **🛠️ 73 MCP tools** — full feature surface as MCP tools, with `mem_do` meta-tool routing 64+ actions in `core` mode (default) for minimal context usage
+- **🛠️ 73 MCP tools** — full feature surface as MCP tools, with `mem_do` meta-tool routing 65 actions in `core` mode (default) for minimal context usage
 
 ## Documentation
 

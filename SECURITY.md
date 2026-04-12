@@ -2,7 +2,7 @@
 
 ## Reporting Vulnerabilities
 
-Please report security issues via GitHub private advisory. Do NOT open public issues for vulnerabilities.
+Please report security issues via [GitHub private advisory](https://github.com/memtomem/memtomem/security/advisories/new) or email **contact@dapada.co.kr**. Do NOT open public issues for vulnerabilities.
 
 ## Supported Versions
 

@@ -1374,7 +1374,7 @@ mm context diff --include=skills,agents,commands
 
 ```bash
 # Setup
-mm init                                # 7-step interactive wizard (b: back, q: quit)
+mm init                                # 8-step interactive wizard (b: back, q: quit)
 
 # Core (daily use)
 mm search "deployment"                 # hybrid search (keywords + meaning)

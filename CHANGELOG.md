@@ -324,7 +324,7 @@ Metadata-only re-release; no code changes.
 Initial open-source release.
 
 ### Core (memtomem)
-- MCP server with 72 tools + `mem_do` meta-tool (63 actions, aliases)
+- MCP server with 72 tools + `mem_do` meta-tool (65 actions, aliases)
 - CLI (`memtomem` / `mm`): init, search, add, recall, index, config, context, shell, web, watchdog
 - Web UI dashboard: search, sources, tags, sessions, health report
 - Hybrid search pipeline: BM25 (FTS5) + dense vectors (sqlite-vec) + RRF fusion

@@ -1,6 +1,6 @@
 # memtomem — OpenClaw Plugin
 
-Markdown-first semantic memory for AI agents. This plugin bridges the memtomem MCP server into OpenClaw, exposing all 63 memory tools to your AI gateway.
+Markdown-first semantic memory for AI agents. This plugin bridges the memtomem MCP server into OpenClaw, exposing all 73 memory tools to your AI gateway.
 
 ## Architecture
 
@@ -60,19 +60,20 @@ In `~/.openclaw/openclaw.json`:
 }
 ```
 
-## Tools (63)
+## Tools (73)
 
-All 63 memtomem MCP tools are registered as OpenClaw agent tools:
+All 73 memtomem MCP tools are registered as OpenClaw agent tools:
 
 | Category | Tools |
 |----------|-------|
-| **Search** | `mem_search`, `mem_recall` |
+| **Search** | `mem_search`, `mem_recall`, `mem_expand` |
 | **Browse** | `mem_list`, `mem_read` |
 | **CRUD** | `mem_add`, `mem_edit`, `mem_delete`, `mem_batch_add` |
 | **Indexing** | `mem_index` |
-| **Meta** | `mem_do` (routes to 55 non-core actions) |
-| **Namespace** | `mem_ns_list`, `mem_ns_set`, `mem_ns_get`, `mem_ns_update`, `mem_ns_rename`, `mem_ns_delete` |
-| **Tags** | `mem_tag_list`, `mem_tag_rename`, `mem_tag_delete` |
+| **Meta** | `mem_do` (routes to 65 registered actions) |
+| **Ask** | `mem_ask` |
+| **Namespace** | `mem_ns_list`, `mem_ns_set`, `mem_ns_get`, `mem_ns_assign`, `mem_ns_update`, `mem_ns_rename`, `mem_ns_delete` |
+| **Tags** | `mem_tag_list`, `mem_tag_rename`, `mem_tag_delete`, `mem_auto_tag` |
 | **Cross-ref** | `mem_link`, `mem_unlink`, `mem_related` |
 | **Fetch** | `mem_fetch` |
 | **Sessions** | `mem_session_start`, `mem_session_end`, `mem_session_list` |
@@ -85,8 +86,13 @@ All 63 memtomem MCP tools are registered as OpenClaw agent tools:
 | **Search History** | `mem_search_history`, `mem_search_suggest` |
 | **Conflict** | `mem_conflict_check` |
 | **Importance** | `mem_importance_scan` |
+| **Entity** | `mem_entity_scan`, `mem_entity_search` |
+| **Temporal** | `mem_timeline`, `mem_activity` |
+| **Policy** | `mem_policy_add`, `mem_policy_list`, `mem_policy_delete`, `mem_policy_run` |
+| **Context** | `mem_context_detect`, `mem_context_generate`, `mem_context_diff`, `mem_context_sync` |
+| **Health** | `mem_watchdog`, `mem_cleanup_orphans` |
 | **Import** | `mem_import_notion`, `mem_import_obsidian` |
-| **Maintenance** | `mem_dedup_scan`, `mem_dedup_merge`, `mem_decay_scan`, `mem_decay_expire`, `mem_auto_tag` |
+| **Maintenance** | `mem_dedup_scan`, `mem_dedup_merge`, `mem_decay_scan`, `mem_decay_expire` |
 | **Data** | `mem_export`, `mem_import` |
 | **Config** | `mem_stats`, `mem_status`, `mem_config`, `mem_embedding_reset` |
 

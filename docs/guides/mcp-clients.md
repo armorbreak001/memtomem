@@ -183,15 +183,16 @@ memtomem status:
   - Embedding model: ollama/nomic-embed-text
 ```
 
-### Available MCP Tools (65)
+### Available MCP Tools (73)
 
 | Category | Tools |
 |----------|-------|
-| **Search** | `mem_search` (hybrid BM25+Dense+RRF), `mem_recall` (date-range retrieval) |
+| **Search** | `mem_search` (hybrid BM25+Dense+RRF), `mem_recall` (date-range retrieval), `mem_expand` (context-window expansion) |
 | **Browse** | `mem_list` (indexed sources), `mem_read` (chunk by UUID) |
 | **CRUD** | `mem_add`, `mem_edit`, `mem_delete`, `mem_batch_add` |
 | **Indexing** | `mem_index` (file/directory indexing, optional `auto_tag`) |
-| **Meta** | `mem_do` (routes to all non-core actions, supports aliases) |
+| **Meta** | `mem_do` (routes to 65 registered actions, supports aliases) |
+| **Ask** | `mem_ask` (natural-language Q&A over indexed memories) |
 | **Namespace** | `mem_ns_list`, `mem_ns_set`, `mem_ns_get`, `mem_ns_assign`, `mem_ns_update`, `mem_ns_rename`, `mem_ns_delete` |
 | **Tags** | `mem_tag_list`, `mem_tag_rename`, `mem_tag_delete`, `mem_auto_tag` |
 | **Cross-ref** | `mem_link`, `mem_unlink`, `mem_related` |
@@ -205,8 +206,12 @@ memtomem status:
 | **History** | `mem_search_history`, `mem_search_suggest` |
 | **Conflict** | `mem_conflict_check` |
 | **Importance** | `mem_importance_scan` |
+| **Entity** | `mem_entity_scan`, `mem_entity_search` |
+| **Temporal** | `mem_timeline`, `mem_activity` |
+| **Policy** | `mem_policy_add`, `mem_policy_list`, `mem_policy_delete`, `mem_policy_run` |
+| **Health** | `mem_watchdog`, `mem_cleanup_orphans` |
 | **Import** | `mem_import_notion`, `mem_import_obsidian` |
-| **Maintenance** | `mem_dedup_scan`, `mem_dedup_merge`, `mem_decay_scan`, `mem_decay_expire`, `mem_cleanup_orphans` |
+| **Maintenance** | `mem_dedup_scan`, `mem_dedup_merge`, `mem_decay_scan`, `mem_decay_expire` |
 | **Data** | `mem_export`, `mem_import` |
 | **Config** | `mem_stats`, `mem_status`, `mem_config`, `mem_embedding_reset` |
 | **Evaluation** | `mem_eval` |

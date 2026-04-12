@@ -44,7 +44,7 @@ uv tool install memtomem             # or: pipx install memtomem
 ### 2. Setup
 
 ```bash
-mm init                               # 7-step wizard (or: mm init -y for CI)
+mm init                               # 8-step wizard (or: mm init -y for CI)
 ```
 
 The wizard picks your embedding model, points at the folder you want indexed, and registers memtomem with your AI editor.
@@ -55,7 +55,7 @@ The wizard picks your embedding model, points at the folder you want indexed, an
 "Call the mem_status tool"   →  confirms the server is connected
 "Index my notes folder"      →  mem_index(path="~/notes")
 "Search for deployment"      →  mem_search(query="deployment checklist")
-"Remember this insight"      →  mem_add(content="...", tags="ops")
+"Remember this insight"      →  mem_add(content="...", tags=["ops"])
 ```
 
 <details>
