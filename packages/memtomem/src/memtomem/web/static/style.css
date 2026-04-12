@@ -1404,6 +1404,23 @@ select:focus-visible {
 .diff-del { background: rgba(224, 90, 90, 0.15); color: var(--danger); }
 .diff-eq  { color: var(--muted); }
 
+/* ── Hooks Sync ── */
+.hooks-sync-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px; margin-bottom: 12px; background: var(--surface);
+}
+.hooks-sync-conflict { border-color: var(--danger); }
+.hooks-sync-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.hooks-sync-preview {
+  font-family: var(--mono); font-size: 0.78rem; line-height: 1.5;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px; margin: 0;
+  overflow: auto; max-height: 200px;
+}
+
 /* ── Sprint 4: Home Tab ── */
 .home-layout { display: flex; flex-direction: column; gap: 16px; padding: 20px; overflow-y: auto; }
 

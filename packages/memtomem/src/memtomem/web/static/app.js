@@ -336,6 +336,7 @@ function switchSettingsSection(sectionName) {
   if (sectionName === 'harness-procedures') loadHarnessProcedures();
   if (sectionName === 'harness-health') loadHarnessHealth();
   if (sectionName === 'harness-watchdog') loadWatchdogStatus();
+  if (sectionName === 'hooks-sync') loadHooksSync();
 }
 
 // Settings nav buttons
@@ -6033,6 +6034,143 @@ function _wdDot(status) {
 function _wdLabel(status) {
   return status === 'ok' ? 'OK' : status === 'warning' ? 'Warning' : 'Critical';
 }
+
+// ── Hooks Sync ──
+async function loadHooksSync() {
+  const statusEl = qs('hooks-sync-status');
+  const contentEl = qs('hooks-sync-content');
+  panelLoading(contentEl);
+  statusEl.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/settings-sync');
+    const data = await res.json();
+
+    // Status badge
+    const badges = {
+      in_sync: { cls: 'badge-success', text: t('settings.hooks.in_sync', 'All hooks are in sync') },
+      out_of_sync: { cls: 'badge-warning', text: `${data.hooks?.pending?.length || 0} ${t('settings.hooks.pending', 'hooks will be added on sync')}` },
+      conflicts: { cls: 'badge-danger', text: `${data.hooks?.conflicts?.length || 0} ${t('settings.hooks.conflicts', 'conflicts found')}` },
+      no_source: { cls: 'badge-muted', text: t('settings.hooks.no_source', 'No .memtomem/settings.json found') },
+      error: { cls: 'badge-danger', text: data.error || 'Error' },
+    };
+    const badge = badges[data.status] || badges.error;
+    statusEl.innerHTML = `<span class="badge ${badge.cls}">${escapeHtml(badge.text)}</span>`
+      + `<span class="text-muted" style="margin-left:0.5rem;font-size:0.85rem">${escapeHtml(data.target_path || '')}</span>`;
+
+    if (data.status === 'no_source' || data.status === 'error') {
+      contentEl.innerHTML = emptyState('', badge.text, data.status === 'no_source'
+        ? 'Create .memtomem/settings.json or run mm init to set up hooks.'
+        : 'Fix the JSON file and reload.');
+      return;
+    }
+
+    let html = '';
+
+    // Conflicts
+    if (data.hooks.conflicts.length) {
+      html += '<h3 style="margin:1rem 0 0.5rem">Conflicts</h3>';
+      for (const c of data.hooks.conflicts) {
+        const oldText = JSON.stringify(c.existing, null, 2);
+        const newText = JSON.stringify(c.proposed, null, 2);
+        const ops = diffLines(oldText, newText);
+        html += `<div class="hooks-sync-card hooks-sync-conflict" data-hook="${escapeHtml(c.name)}">
+          <div class="hooks-sync-card-header">
+            <strong>${escapeHtml(c.name)}</strong>
+            <button class="btn-sm btn-primary hooks-resolve-btn"
+              data-i18n="settings.hooks.use_proposed">${t('settings.hooks.use_proposed', "Use memtomem's")}</button>
+          </div>
+          <div class="diff-view">${renderDiff(ops)}</div>
+        </div>`;
+      }
+    }
+
+    // Pending
+    if (data.hooks.pending.length) {
+      html += '<h3 style="margin:1rem 0 0.5rem">Pending</h3>';
+      for (const p of data.hooks.pending) {
+        html += `<div class="hooks-sync-card">
+          <div class="hooks-sync-card-header"><strong>${escapeHtml(p.name)}</strong>
+            <span class="badge badge-warning">will be added</span></div>
+          <pre class="hooks-sync-preview">${escapeHtml(JSON.stringify(p.hook, null, 2))}</pre>
+        </div>`;
+      }
+    }
+
+    // Synced
+    if (data.hooks.synced.length) {
+      html += '<h3 style="margin:1rem 0 0.5rem">' + t('settings.hooks.synced', 'In sync') + '</h3>';
+      html += '<div class="text-muted">';
+      for (const s of data.hooks.synced) {
+        html += `<div style="padding:0.25rem 0">${escapeHtml(s.name)}</div>`;
+      }
+      html += '</div>';
+    }
+
+    if (!html) {
+      html = emptyState('', t('settings.hooks.in_sync', 'All hooks are in sync'), 'No hooks defined in .memtomem/settings.json.');
+    }
+
+    contentEl.innerHTML = html;
+
+    // Resolve buttons
+    contentEl.querySelectorAll('.hooks-resolve-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('.hooks-sync-card');
+        const hookName = card.dataset.hook;
+        const ok = await showConfirm({
+          title: 'Replace hook',
+          message: `Replace your "${hookName}" hook with memtomem's version?`,
+          confirmText: 'Replace',
+        });
+        if (!ok) return;
+        btnLoading(btn, true);
+        try {
+          const r = await fetch('/api/settings-sync/resolve', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({hook_name: hookName, action: 'use_proposed'}),
+          });
+          const result = await r.json();
+          if (result.status === 'ok') {
+            showToast(result.reason);
+            loadHooksSync();
+          } else {
+            showToast(result.reason, 'error');
+          }
+        } finally { btnLoading(btn, false); }
+      });
+    });
+
+  } catch (err) {
+    contentEl.innerHTML = emptyState('', 'Failed to load sync status', err.message);
+  }
+}
+
+// Sync Now button
+document.getElementById('hooks-sync-btn')?.addEventListener('click', async () => {
+  const btn = document.getElementById('hooks-sync-btn');
+  const ok = await showConfirm({
+    title: 'Sync settings',
+    message: 'Merge .memtomem/settings.json hooks into ~/.claude/settings.json?',
+    confirmText: 'Sync',
+  });
+  if (!ok) return;
+  btnLoading(btn, true);
+  try {
+    const res = await fetch('/api/settings-sync', {method: 'POST', headers: {'Content-Type': 'application/json'}});
+    const data = await res.json();
+    const warnings = data.results?.flatMap(r => r.warnings || []) || [];
+    if (warnings.length) {
+      showToast(`Synced with ${warnings.length} warning(s)`, 'warning');
+    } else {
+      showToast(t('settings.hooks.sync_success', 'Sync completed'));
+    }
+    loadHooksSync();
+  } catch (err) {
+    showToast('Sync failed: ' + err.message, 'error');
+  } finally { btnLoading(btn, false); }
+});
 
 async function loadWatchdogStatus() {
   const report = qs('watchdog-report');

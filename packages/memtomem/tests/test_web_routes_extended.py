@@ -11,6 +11,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -207,6 +208,7 @@ def app():
     application.state.index_engine = index_engine
     application.state.config = FakeConfig()
     application.state.dedup_scanner = dedup_scanner
+    application.state.project_root = Path("/tmp/test-project")
 
     return application
 
@@ -481,3 +483,138 @@ class TestProcedures:
         data = resp.json()
         assert data["total"] == 0
         assert data["procedures"] == []
+
+
+class TestSettingsSync:
+    """Tests for the settings-sync route (hooks conflict resolution)."""
+
+    async def test_no_source_returns_no_source(self, app, client: AsyncClient, tmp_path):
+        """When .memtomem/settings.json doesn't exist, status is no_source."""
+        app.state.project_root = tmp_path
+        resp = await client.get("/api/settings-sync")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "no_source"
+
+    async def test_in_sync(self, app, client: AsyncClient, tmp_path):
+        """When hooks are identical in both files, status is in_sync."""
+        hook = {"name": "mm-test", "event": "PostToolUse", "command": "echo ok"}
+
+        canonical = tmp_path / ".memtomem" / "settings.json"
+        canonical.parent.mkdir()
+        canonical.write_text(json.dumps({"hooks": [hook]}))
+
+        target = Path.home() / ".claude" / "settings.json"
+        if target.is_file():
+            backup = target.read_text()
+        else:
+            backup = None
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps({"hooks": [hook]}))
+            app.state.project_root = tmp_path
+
+            resp = await client.get("/api/settings-sync")
+            data = resp.json()
+            assert data["status"] == "in_sync"
+            assert len(data["hooks"]["synced"]) == 1
+            assert data["hooks"]["synced"][0]["name"] == "mm-test"
+        finally:
+            if backup is not None:
+                target.write_text(backup)
+            elif target.is_file():
+                target.unlink()
+
+    async def test_conflict_detected(self, app, client: AsyncClient, tmp_path):
+        """When hooks have same name but different config, status is conflicts."""
+        canonical_hook = {"name": "mm-hook", "event": "PostToolUse", "command": "echo new"}
+        target_hook = {"name": "mm-hook", "event": "PostToolUse", "command": "echo old"}
+
+        canonical = tmp_path / ".memtomem" / "settings.json"
+        canonical.parent.mkdir()
+        canonical.write_text(json.dumps({"hooks": [canonical_hook]}))
+
+        target = Path.home() / ".claude" / "settings.json"
+        if target.is_file():
+            backup = target.read_text()
+        else:
+            backup = None
+        try:
+            target.write_text(json.dumps({"hooks": [target_hook]}))
+            app.state.project_root = tmp_path
+
+            resp = await client.get("/api/settings-sync")
+            data = resp.json()
+            assert data["status"] == "conflicts"
+            assert len(data["hooks"]["conflicts"]) == 1
+            c = data["hooks"]["conflicts"][0]
+            assert c["name"] == "mm-hook"
+            assert c["existing"]["command"] == "echo old"
+            assert c["proposed"]["command"] == "echo new"
+        finally:
+            if backup is not None:
+                target.write_text(backup)
+            elif target.is_file():
+                target.unlink()
+
+    async def test_pending_hooks(self, app, client: AsyncClient, tmp_path):
+        """Hooks in canonical but not in target are pending."""
+        hook = {"name": "mm-new", "event": "PostToolUse", "command": "echo hi"}
+
+        canonical = tmp_path / ".memtomem" / "settings.json"
+        canonical.parent.mkdir()
+        canonical.write_text(json.dumps({"hooks": [hook]}))
+
+        target = Path.home() / ".claude" / "settings.json"
+        if target.is_file():
+            backup = target.read_text()
+        else:
+            backup = None
+        try:
+            target.write_text(json.dumps({"hooks": []}))
+            app.state.project_root = tmp_path
+
+            resp = await client.get("/api/settings-sync")
+            data = resp.json()
+            assert data["status"] == "out_of_sync"
+            assert len(data["hooks"]["pending"]) == 1
+            assert data["hooks"]["pending"][0]["name"] == "mm-new"
+        finally:
+            if backup is not None:
+                target.write_text(backup)
+            elif target.is_file():
+                target.unlink()
+
+    async def test_resolve_replaces_hook(self, app, client: AsyncClient, tmp_path):
+        """POST /resolve replaces the target's hook with canonical version."""
+        canonical_hook = {"name": "mm-hook", "event": "PostToolUse", "command": "echo new"}
+        target_hook = {"name": "mm-hook", "event": "PostToolUse", "command": "echo old"}
+
+        canonical = tmp_path / ".memtomem" / "settings.json"
+        canonical.parent.mkdir()
+        canonical.write_text(json.dumps({"hooks": [canonical_hook]}))
+
+        target = Path.home() / ".claude" / "settings.json"
+        if target.is_file():
+            backup = target.read_text()
+        else:
+            backup = None
+        try:
+            target.write_text(json.dumps({"hooks": [target_hook]}))
+            app.state.project_root = tmp_path
+
+            resp = await client.post(
+                "/api/settings-sync/resolve",
+                json={"hook_name": "mm-hook", "action": "use_proposed"},
+            )
+            data = resp.json()
+            assert data["status"] == "ok"
+
+            # Verify the file was updated
+            updated = json.loads(target.read_text())
+            assert updated["hooks"][0]["command"] == "echo new"
+        finally:
+            if backup is not None:
+                target.write_text(backup)
+            elif target.is_file():
+                target.unlink()

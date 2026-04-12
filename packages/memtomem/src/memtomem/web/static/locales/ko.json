@@ -190,6 +190,17 @@
   "settings.nav.procedures": "프로시저",
   "settings.nav.health": "상태",
   "settings.nav.watchdog": "워치독",
+  "settings.nav.hooks_sync": "훅 동기화",
+
+  "settings.hooks.title": "설정 훅",
+  "settings.hooks.sync_now": "지금 동기화",
+  "settings.hooks.in_sync": "모든 훅이 동기화됨",
+  "settings.hooks.conflicts": "개 충돌 발견",
+  "settings.hooks.pending": "개 훅이 동기화 시 추가됨",
+  "settings.hooks.use_proposed": "memtomem 버전 사용",
+  "settings.hooks.synced": "동기화됨",
+  "settings.hooks.sync_success": "동기화 완료",
+  "settings.hooks.no_source": ".memtomem/settings.json 없음",
 
   "settings.config.guide_title": "설정 가이드",
   "settings.config.guide_text": "설정 섹션을 선택하면 문서를 볼 수 있습니다.",

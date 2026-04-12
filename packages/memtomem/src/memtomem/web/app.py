@@ -24,6 +24,7 @@ from memtomem.web.routes import (
     scratch,
     search,
     sessions,
+    settings_sync,
     sources,
     system,
     tags,
@@ -62,6 +63,7 @@ def create_app(lifespan=None) -> FastAPI:
     app.include_router(procedures.router, prefix="/api")
     app.include_router(evaluation.router, prefix="/api")
     app.include_router(watchdog.router, prefix="/api")
+    app.include_router(settings_sync.router, prefix="/api")
 
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
@@ -134,6 +136,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     from memtomem.search.dedup import DedupScanner
 
+    app.state.project_root = Path.cwd()
     app.state.config = comp.config
     app.state.storage = comp.storage
     app.state.embedder = comp.embedder

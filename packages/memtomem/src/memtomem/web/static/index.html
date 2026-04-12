@@ -534,6 +534,7 @@
         <div class="settings-nav-group" data-i18n="settings.nav.system">System</div>
         <button class="settings-nav-btn active" data-section="config" data-i18n="settings.nav.config">Config</button>
         <button class="settings-nav-btn" data-section="namespaces" data-i18n="settings.nav.namespaces">Namespaces</button>
+        <button class="settings-nav-btn" data-section="hooks-sync" data-i18n="settings.nav.hooks_sync">Hooks Sync</button>
         <div class="settings-nav-group" data-i18n="settings.nav.maintenance">Maintenance</div>
         <button class="settings-nav-btn" data-section="dedup" data-i18n="settings.nav.dedup">Dedup</button>
         <button class="settings-nav-btn" data-section="decay" data-i18n="settings.nav.decay">Decay</button>
@@ -578,6 +579,16 @@
           </div>
         </div>
 
+
+        <!-- Hooks Sync section -->
+        <div class="settings-section" id="settings-hooks-sync">
+          <div class="hooks-sync-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <h2 data-i18n="settings.hooks.title">Settings Hooks</h2>
+            <button id="hooks-sync-btn" class="btn-primary" data-i18n="settings.hooks.sync_now">Sync Now</button>
+          </div>
+          <div id="hooks-sync-status"></div>
+          <div id="hooks-sync-content"></div>
+        </div>
 
         <!-- Dedup section -->
         <div class="settings-section" id="settings-dedup">

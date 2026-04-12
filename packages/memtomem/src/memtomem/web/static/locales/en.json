@@ -190,6 +190,17 @@
   "settings.nav.procedures": "Procedures",
   "settings.nav.health": "Health",
   "settings.nav.watchdog": "Watchdog",
+  "settings.nav.hooks_sync": "Hooks Sync",
+
+  "settings.hooks.title": "Settings Hooks",
+  "settings.hooks.sync_now": "Sync Now",
+  "settings.hooks.in_sync": "All hooks are in sync",
+  "settings.hooks.conflicts": "conflicts found",
+  "settings.hooks.pending": "hooks will be added on sync",
+  "settings.hooks.use_proposed": "Use memtomem's",
+  "settings.hooks.synced": "In sync",
+  "settings.hooks.sync_success": "Sync completed",
+  "settings.hooks.no_source": "No .memtomem/settings.json found",
 
   "settings.config.guide_title": "Configuration Guide",
   "settings.config.guide_text": "Select a config section to see its documentation.",

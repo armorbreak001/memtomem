@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fastapi import Request
@@ -36,3 +37,7 @@ def get_config(request: Request) -> Mem2MemConfig:
 
 def get_dedup_scanner(request: Request):
     return request.app.state.dedup_scanner
+
+
+def get_project_root(request: Request) -> Path:
+    return request.app.state.project_root
