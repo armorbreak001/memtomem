@@ -3,7 +3,7 @@
 All notable changes will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
-## [Unreleased]
+## [0.1.7] — 2026-04-12
 
 ### Added
 - **PolicyScheduler**: background loop that periodically runs all enabled
