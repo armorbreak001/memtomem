@@ -5,7 +5,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+## [0.1.8] — 2026-04-13
+
 ### Added
+- **Structured search output**: `mem_search(output_format="structured")`
+  returns JSON with `chunk_id`, `namespace`, `score`, `source`,
+  `hierarchy`, and full `content` per result. Enables STM proxy to use
+  real UUIDs for `increment_access` feedback instead of sha256 fallbacks.
+- **Version negotiation**: `mem_do(action="version")` returns server
+  version and capabilities JSON (e.g. `search_formats`). Used by STM
+  proxy to discover supported features before switching parsers.
 - **Auto-discover AI tool memory directories**: `memory_dirs` now
   automatically includes `~/.claude/projects`, `~/.gemini`, and
   `~/.codex/memories` when they exist, so `mem_index` and the file
@@ -17,10 +26,30 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   Settings > Maintenance > Reset tab in Web UI. Deletes all data (chunks,
   sessions, history, relations, entities, policies, health snapshots) and
   reinitializes the DB; embedding configuration is preserved.
+- **Namespace prefix grouping**: Web UI Settings tab and namespace
+  dropdowns group namespaces by colon prefix (collapsible sections).
 - **Improved web extra messaging**: `mm web` and `mm init` now explain that
   the `[web]` extra is not included in the base install, reducing confusion
   when `uv tool install memtomem` registers the `memtomem-web` entry point
   but FastAPI is missing.
+
+### Fixed
+- **Hooks record format**: migrated context gateway hooks from array to
+  record format for Claude Code ≥ 2.1.104 compatibility.
+- **Home activity graph**: rebuilt as responsive GitHub-style contribution
+  grid.
+- **Codex commands**: removed phantom Codex commands generator (feature
+  doesn't exist upstream).
+
+### Changed
+- **Web JS refactor**: split `app.js` (3554 lines) into core + 8 domain
+  modules. No build step; global function dependencies preserved.
+
+### Docs
+- Uninstall instructions in user guide and getting started.
+- Consolidated scope section in Agent Context Management.
+- Hooks references updated to record format.
+- Stale tool counts, wizard step count, and tags parameter type fixed.
 
 ## [0.1.7] — 2026-04-12
 
