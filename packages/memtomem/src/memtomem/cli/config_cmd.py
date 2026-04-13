@@ -79,3 +79,15 @@ def config_set(key: str, value: str) -> None:
 
     save_config_overrides(cfg)
     click.echo(f"{key}: {old_val} -> {coerced}")
+
+    # Rebuild FTS index when tokenizer changes (matches Web UI / MCP behaviour)
+    if key == "search.tokenizer":
+        from memtomem.storage.fts_tokenizer import set_tokenizer
+
+        set_tokenizer(coerced)
+
+        from memtomem.storage.factory import create_storage
+
+        storage = create_storage(cfg)
+        count = storage.rebuild_fts()
+        click.echo(f"FTS index rebuilt ({count} chunks).")

@@ -77,7 +77,7 @@ def _set_config_key(config: Mem2MemConfig, key: str, value: str) -> str:
 
     Returns a human-readable confirmation or error message.
     """
-    from memtomem.config import FIELD_CONSTRAINTS, coerce_and_validate
+    from memtomem.config import FIELD_CONSTRAINTS, MUTABLE_FIELDS, coerce_and_validate
 
     parts = key.split(".")
     if len(parts) != 2:
@@ -90,6 +90,10 @@ def _set_config_key(config: Mem2MemConfig, key: str, value: str) -> str:
 
     if not hasattr(section, field_name):
         return f"Field '{field_name}' not found in section '{section_name}'."
+
+    allowed = MUTABLE_FIELDS.get(section_name, set())
+    if field_name not in allowed:
+        return f"'{key}' is not mutable at runtime (read-only). Use 'mm init' to change it."
 
     constraint = FIELD_CONSTRAINTS.get(key)
     if constraint:

@@ -466,9 +466,36 @@ class TestSetConfigKey:
 
     def test_unsupported_type_rejected(self):
         config = Mem2MemConfig()
-        # memory_dirs is a list, which cannot be set via _set_config_key
+        # memory_dirs is not in MUTABLE_FIELDS, so it's rejected as read-only
         msg = _set_config_key(config, "indexing.memory_dirs", "/tmp")
-        assert "unsupported" in msg.lower() or "Cannot set" in msg
+        assert "not mutable" in msg.lower() or "read-only" in msg.lower()
+
+    def test_init_only_field_rejected(self):
+        """_set_config_key must reject fields not in MUTABLE_FIELDS."""
+        config = Mem2MemConfig()
+        original = config.embedding.provider
+        msg = _set_config_key(config, "embedding.provider", "openai")
+        assert "not mutable" in msg.lower() or "read-only" in msg.lower()
+        assert config.embedding.provider == original  # unchanged
+
+    def test_init_only_storage_backend_rejected(self):
+        config = Mem2MemConfig()
+        msg = _set_config_key(config, "storage.backend", "postgres")
+        assert "not mutable" in msg.lower() or "read-only" in msg.lower()
+
+    def test_mutable_field_still_works(self):
+        """Mutable fields should still be accepted after adding the guard."""
+        config = Mem2MemConfig()
+        msg = _set_config_key(config, "search.default_top_k", "25")
+        assert msg.startswith("Set ")
+        assert config.search.default_top_k == 25
+
+    def test_set_rrf_weights_from_csv(self):
+        """MCP path: rrf_weights as CSV string → list[float]."""
+        config = Mem2MemConfig()
+        msg = _set_config_key(config, "search.rrf_weights", "1.5,0.8")
+        assert msg.startswith("Set ")
+        assert config.search.rrf_weights == [1.5, 0.8]
 
 
 # ===========================================================================

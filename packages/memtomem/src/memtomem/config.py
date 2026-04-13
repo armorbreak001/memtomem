@@ -392,6 +392,7 @@ FIELD_CONSTRAINTS: dict[str, dict] = {
     "decay.half_life_days": {"type": float, "min": 0.1},
     "mmr.enabled": {"type": bool},
     "mmr.lambda_param": {"type": float, "min": 0.0, "max": 1.0},
+    "search.rrf_weights": {"type": list, "item_type": float, "length": 2},
     "namespace.default_namespace": {"type": str},
     "namespace.enable_auto_ns": {"type": bool},
 }
@@ -431,6 +432,21 @@ def coerce_and_validate(value: object, constraint: dict | None) -> object:
             raise ValueError(f"cannot convert '{value}' to float")
     elif expected_type is str:
         coerced = str(value)
+    elif expected_type is list:
+        item_type = constraint.get("item_type", float)
+        expected_len = constraint.get("length")
+        if isinstance(value, str):
+            parts = [s.strip() for s in value.split(",")]
+        elif isinstance(value, (list, tuple)):
+            parts = list(value)
+        else:
+            raise ValueError(f"cannot convert {type(value).__name__} to list")
+        try:
+            coerced = [item_type(p) for p in parts]
+        except (TypeError, ValueError):
+            raise ValueError(f"cannot convert list items to {item_type.__name__}")
+        if expected_len is not None and len(coerced) != expected_len:
+            raise ValueError(f"expected length {expected_len}, got {len(coerced)}")
     else:
         coerced = value
 
@@ -519,6 +535,14 @@ def _auto_discovered_memory_dirs() -> list[Path]:
     return [p.expanduser() for p in candidates if p.expanduser().is_dir()]
 
 
+# Fields persisted by ``save_config_overrides`` but NOT settable via the
+# generic ``mm config set`` / ``mem_config`` path.  Managed through dedicated
+# endpoints (e.g. Web UI ``/memory-dirs/*``).
+_EXTRA_PERSIST_FIELDS: dict[str, set[str]] = {
+    "indexing": {"memory_dirs"},
+}
+
+
 def save_config_overrides(
     config: Mem2MemConfig,
     mutable_fields: dict[str, set[str]] | None = None,
@@ -533,7 +557,12 @@ def save_config_overrides(
     import logging
 
     _log = logging.getLogger(__name__)
-    mutable_fields = mutable_fields or MUTABLE_FIELDS
+    base = mutable_fields or MUTABLE_FIELDS
+    # Merge extra-persist fields so they are always written alongside mutables.
+    effective: dict[str, set[str]] = {}
+    for section in {*base, *_EXTRA_PERSIST_FIELDS}:
+        effective[section] = base.get(section, set()) | _EXTRA_PERSIST_FIELDS.get(section, set())
+    mutable_fields = effective
 
     path = _override_path()
     path.parent.mkdir(parents=True, exist_ok=True)
