@@ -90,6 +90,7 @@ uv pip install -e "packages/memtomem[all]"
 
 | Extra | What it adds |
 |-------|-------------|
+| `onnx` | Local embedding via ONNX (`fastembed`) — no server needed |
 | `ollama` | Local embedding via Ollama (`nomic-embed-text`) |
 | `openai` | Cloud embedding via OpenAI |
 | `korean` | Korean tokenizer (`kiwipiepy`) |
@@ -284,7 +285,10 @@ mm config set key value    # change a setting
 mm embedding-reset         # check/resolve embedding model mismatch
 mm reset                   # delete all data and reinitialize the DB
 mm context detect          # find agent config files
-mm context generate        # sync project rules to all editors
+mm context init            # create .memtomem/context.md from existing files
+mm context generate        # generate CLAUDE.md, .cursorrules, GEMINI.md, etc.
+mm context diff            # show pending changes before syncing
+mm context sync            # update all editors after editing context.md
 mm session start           # start a tracked session
 mm session end             # end session with auto-summary
 mm session list            # list sessions
@@ -293,6 +297,7 @@ mm activity log            # log agent activity event
 mm session wrap -- CMD     # wrap a command with session lifecycle
 mm watchdog status         # show latest health check results
 mm watchdog run            # run health checks immediately
+mm watchdog history        # view historical health check results
 mm ingest claude-memory    # index Claude Code auto-memory
 mm ingest gemini-memory    # index Gemini CLI memory
 mm ingest codex-memory     # index Codex CLI memory
