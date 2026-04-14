@@ -22,6 +22,12 @@ async def mem_list(
     Args:
         source_filter: Filter by source file path (substring match, or glob pattern with *, ?, [])
         namespace: Only list sources containing chunks in this namespace
+
+    Examples:
+        mem_list()                               — all indexed files
+        mem_list(source_filter="*.md")           — markdown files (glob)
+        mem_list(source_filter="docs/")          — files with "docs/" in path (substring)
+        mem_list(namespace="work")               — files in the "work" namespace
     """
     from fnmatch import fnmatch
 
