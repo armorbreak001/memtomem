@@ -9,9 +9,14 @@ from pathlib import Path
 
 import click
 
+
 # Session state file — stores active session UUID.
-_STATE_DIR = Path("~/.memtomem").expanduser()
-_STATE_FILE = _STATE_DIR / ".current_session"
+def _state_dir() -> Path:
+    """Return the memtomem state directory, resolving HOME at call time."""
+    return Path.home() / ".memtomem"
+
+
+_STATE_FILE = _state_dir() / ".current_session"
 
 
 def _read_current_session() -> str | None:
@@ -24,7 +29,7 @@ def _read_current_session() -> str | None:
 
 
 def _write_current_session(session_id: str) -> None:
-    _STATE_DIR.mkdir(parents=True, exist_ok=True)
+    _state_dir().mkdir(parents=True, exist_ok=True)
     _STATE_FILE.write_text(session_id + "\n")
 
 
