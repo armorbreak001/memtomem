@@ -16,13 +16,15 @@ def _state_dir() -> Path:
     return Path.home() / ".memtomem"
 
 
-_STATE_FILE = _state_dir() / ".current_session"
+def _state_file() -> Path:
+    """Return the path to the current-session state file (lazy — resolves HOME at call time)."""
+    return _state_dir() / ".current_session"
 
 
 def _read_current_session() -> str | None:
     """Read the active session ID from the state file, or None."""
     try:
-        text = _STATE_FILE.read_text().strip()
+        text = _state_file().read_text().strip()
         return text if text else None
     except FileNotFoundError:
         return None
@@ -30,12 +32,12 @@ def _read_current_session() -> str | None:
 
 def _write_current_session(session_id: str) -> None:
     _state_dir().mkdir(parents=True, exist_ok=True)
-    _STATE_FILE.write_text(session_id + "\n")
+    _state_file().write_text(session_id + "\n")
 
 
 def _clear_current_session() -> None:
     try:
-        _STATE_FILE.unlink()
+        _state_file().unlink()
     except FileNotFoundError:
         pass
 
